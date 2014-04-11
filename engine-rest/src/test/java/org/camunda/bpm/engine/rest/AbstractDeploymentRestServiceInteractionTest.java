@@ -6,6 +6,7 @@ import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.impl.calendar.DateTimeUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
 import org.camunda.bpm.engine.repository.Deployment;
+import org.camunda.bpm.engine.repository.DeploymentBuilder;
 import org.camunda.bpm.engine.repository.DeploymentQuery;
 import org.camunda.bpm.engine.repository.Resource;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
@@ -16,6 +17,7 @@ import org.junit.Test;
 import javax.ws.rs.core.Response.Status;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -34,11 +36,17 @@ public abstract class AbstractDeploymentRestServiceInteractionTest extends Abstr
   protected static final String RESOURCES_URL = DEPLOYMENT_URL + "/resources";
   protected static final String SINGLE_RESOURCE_URL = RESOURCES_URL + "/{resourceId}";
   protected static final String SINGLE_RESOURCE_DATA_URL = SINGLE_RESOURCE_URL + "/data";
+  protected static final String CREATE_DEPLOYMENT_URL = TEST_RESOURCE_ROOT_PATH + "/deployment";
 
   protected Deployment mockDeployment;
   protected List<Resource> mockDeploymentResources;
   protected Resource mockDeploymentResource;
   protected DeploymentQuery deploymentQueryMock;
+  protected DeploymentBuilder deploymentBuilderMock;
+  protected Deployment deploymentMock;
+
+  // TODO: To we need this?
+  private RepositoryService repositoryServiceMock;
 
   @Before
   public void setUpRuntimeData() {
@@ -57,6 +65,11 @@ public abstract class AbstractDeploymentRestServiceInteractionTest extends Abstr
     mockDeploymentResource = MockProvider.createMockDeploymentResource();
 
     when(repositoryServiceMock.getResourceAsStreamById(eq(EXAMPLE_DEPLOYMENT_ID), eq(EXAMPLE_DEPLOYMENT_RESOURCE_ID))).thenReturn(createMockDeploymentResourceData());
+
+    deploymentBuilderMock = mock(DeploymentBuilder.class);
+    deploymentMock = MockProvider.createMockDeployment();
+    when(repositoryServiceMock.createDeployment()).thenReturn(deploymentBuilderMock);
+    when(deploymentBuilderMock.deploy()).thenReturn(deploymentMock);
   }
 
   private InputStream createMockDeploymentResourceData() {
@@ -203,13 +216,76 @@ public abstract class AbstractDeploymentRestServiceInteractionTest extends Abstr
   public void testGetDeploymentResourceDataForNonExistingDeploymentIdAndNonExistingResourceId() {
 
     given()
-        .pathParam("id", NON_EXISTING_DEPLOYMENT_ID)
-        .pathParam("resourceId", NON_EXISTING_DEPLOYMENT_RESOURCE_ID)
+      .pathParam("id", NON_EXISTING_DEPLOYMENT_ID)
+      .pathParam("resourceId", NON_EXISTING_DEPLOYMENT_RESOURCE_ID)
       .then().expect().statusCode(Status.NOT_FOUND.getStatusCode())
-        .body(containsString("Deployment resource '" + NON_EXISTING_DEPLOYMENT_RESOURCE_ID + "' for deployment id '" + NON_EXISTING_DEPLOYMENT_ID + "' does not exist."))
+      .body(containsString("Deployment resource '" + NON_EXISTING_DEPLOYMENT_RESOURCE_ID + "' for deployment id '" + NON_EXISTING_DEPLOYMENT_ID + "' does not exist."))
       .when().get(SINGLE_RESOURCE_DATA_URL);
 
   }
+
+  @Test
+  public void testCreateCompleteDeployment() throws Exception {
+    byte[] bytes = "someContent".getBytes();
+
+    Response response = given()
+      .multiPart("data", "unspecified", bytes)
+      .multiPart("more-data", "unspecified", createMockDeploymentResourceData())
+      .multiPart("deployment-name", MockProvider.EXAMPLE_DEPLOYMENT_ID)
+      .multiPart("enable-duplicate-filtering", "true")
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+    .when()
+      .post(CREATE_DEPLOYMENT_URL);
+
+    verifyDeployment(deploymentMock, response);
+  }
+
+  @Test
+  public void testCreateDeploymentOnlyWithBytes() throws Exception {
+    Deployment deploymentMock = mock(Deployment.class);
+    when(deploymentMock.getId()).thenReturn(MockProvider.EXAMPLE_DEPLOYMENT_ID);
+    when(deploymentMock.getName()).thenReturn(null);
+    when(deploymentMock.getDeploymentTime()).thenReturn(DateTimeUtil.parseDateTime(MockProvider.EXAMPLE_DEPLOYMENT_TIME).toDate());
+    when(deploymentBuilderMock.deploy()).thenReturn(deploymentMock);
+
+    byte[] bytes = "someContent".getBytes();
+
+    Response response = given()
+      .multiPart("data", "unspecified", bytes)
+      .multiPart("more-data", "unspecified", createMockDeploymentResourceData())
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+    .when()
+      .post(CREATE_DEPLOYMENT_URL);
+
+    String content = response.asString();
+
+    JsonPath path = from(content);
+    String returnedId = path.get("id");
+    String returnedName = path.get("name");
+    String returnedDeploymentTime = path.get("deploymentTime");
+
+    List<HashMap<String, String>> returnedLinks = path.getList("links");
+    Assert.assertEquals(1, returnedLinks.size());
+
+    Assert.assertEquals(deploymentMock.getId(), returnedId);
+    Assert.assertEquals(null, returnedName);
+    Assert.assertEquals(deploymentMock.getDeploymentTime(), DateTimeUtil.parseDateTime(returnedDeploymentTime).toDate());
+  }
+
+  @Test
+  public void testCreateDeploymentWithoutBytes() throws Exception {
+    Response response = given()
+        .multiPart("deployment-name", MockProvider.EXAMPLE_DEPLOYMENT_ID)
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+    .when()
+      .post(CREATE_DEPLOYMENT_URL);
+
+    verifyDeployment(deploymentMock, response);
+  }
+
 
   private void verifyDeployment(Deployment mockDeployment, Response response) {
     String content = response.asString();
