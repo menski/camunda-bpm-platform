@@ -12,7 +12,9 @@
  */
 package org.camunda.bpm.engine.rest;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -24,6 +26,7 @@ import java.util.List;
 
 import org.camunda.bpm.engine.rest.dto.CountResultDto;
 import org.camunda.bpm.engine.rest.dto.repository.DeploymentDto;
+import org.camunda.bpm.engine.rest.mapper.MultipartFormData;
 import org.camunda.bpm.engine.rest.sub.repository.DeploymentResource;
 
 @Path(DeploymentRestService.PATH)
@@ -48,6 +51,11 @@ public interface DeploymentRestService {
   List<DeploymentDto> getDeployments(@Context UriInfo uriInfo,
                                                    @QueryParam("firstResult") Integer firstResult,
                                                    @QueryParam("maxResults") Integer maxResults);
+
+  @POST
+  @Path("/deployment")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  DeploymentDto createDeployment(@Context UriInfo uriInfo, MultipartFormData multipartFormData);
 
   @GET
   @Path("/count")

@@ -12,18 +12,26 @@
  */
 package org.camunda.bpm.engine.rest.impl;
 
+import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.repository.Deployment;
+import org.camunda.bpm.engine.repository.DeploymentBuilder;
 import org.camunda.bpm.engine.repository.DeploymentQuery;
 import org.camunda.bpm.engine.rest.DeploymentRestService;
 import org.camunda.bpm.engine.rest.dto.CountResultDto;
 import org.camunda.bpm.engine.rest.dto.repository.DeploymentDto;
 import org.camunda.bpm.engine.rest.dto.repository.DeploymentQueryDto;
+import org.camunda.bpm.engine.rest.mapper.MultipartFormData;
+import org.camunda.bpm.engine.rest.mapper.MultipartFormData.FormPart;
 import org.camunda.bpm.engine.rest.sub.repository.DeploymentResource;
 import org.camunda.bpm.engine.rest.sub.repository.DeploymentResourceImpl;
 
@@ -63,6 +71,41 @@ public class DeploymentRestServiceImpl extends AbstractRestProcessEngineAware im
       deployments.add(def);
     }
     return deployments;
+  }
+
+  public DeploymentDto createDeployment(UriInfo uriInfo, MultipartFormData payload) {
+    DeploymentBuilder deploymentBuilder = getProcessEngine().getRepositoryService().createDeployment();
+
+    Set<String> partNames = payload.getPartNames();
+    for (String name : partNames) {
+      if ("deployment-name".equals(name)) {
+        FormPart part = payload.getNamedPart(name);
+        deploymentBuilder.name(part.getTextContent());
+      } else if ("enable-duplicate-filtering".equals(name)) {
+        FormPart part = payload.getNamedPart(name);
+        if ("true".equals(part.getTextContent())) {
+          deploymentBuilder.enableDuplicateFiltering();
+        }
+      } else {
+        FormPart part = payload.getNamedPart(name);
+        deploymentBuilder.addInputStream(part.getName(), new ByteArrayInputStream(part.getBinaryContent()));
+      }
+    }
+
+    Deployment deployment = deploymentBuilder.deploy();
+
+    UriBuilder baseUriBuilder = uriInfo.getBaseUriBuilder()
+        .path(relativeRootResourcePath)
+        .path(DeploymentRestService.class);
+
+    DeploymentDto deploymentDto = DeploymentDto.fromDeployment(deployment);
+
+    // GET /
+    URI baseUri = baseUriBuilder.build();
+    deploymentDto.addReflexiveLink(baseUri, HttpMethod.GET, deployment.getId());
+
+    return deploymentDto;
+
   }
 
   private List<Deployment> executePaginatedQuery(DeploymentQuery query, Integer firstResult, Integer maxResults) {
