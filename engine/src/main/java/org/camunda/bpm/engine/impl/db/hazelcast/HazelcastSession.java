@@ -13,23 +13,13 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_BYTE_ARRAY_MAP_NAME;
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_DEPLOYMENT_MAP_NAME;
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_EXECUTION_MAP_NAME;
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_PROCESS_DEFINITION_MAP_NAME;
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_PROPERTY_MAP_NAME;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.hazelcast.query.SqlPredicate;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.persistence.OptimisticLockException;
-
-import org.apache.openjpa.util.OptimisticException;
+import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
@@ -38,9 +28,8 @@ import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
-import com.hazelcast.query.SqlPredicate;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 /**
  * @author Sebastian Menski
@@ -59,10 +48,12 @@ public class HazelcastSession extends AbstractPersistenceSession {
     return hazelcastInstance.getMap(mapName);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends DbEntity> IMap<String, T> getMap(DbEntityOperation operation) {
     return (IMap<String, T>) getMap(operation.getEntityType());
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends DbEntity> IMap<String, T> getMap(Class<T> type) {
     return (IMap) getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
   }
@@ -70,26 +61,47 @@ public class HazelcastSession extends AbstractPersistenceSession {
 
   protected void insertEntity(DbEntityOperation operation) {
     DbEntity entity = operation.getEntity();
+    if (entity instanceof HasDbRevision) {
+      ((HasDbRevision) entity).setRevision(1);
+    }
     getMap(operation).put(entity.getId(), entity);
   }
 
   protected void deleteEntity(DbEntityOperation operation) {
     IMap<String, DbEntity> map = getMap(operation);
 
-    DbEntity dbEntity = operation.getEntity();
-    DbEntity removedEntity = map.remove(dbEntity.getId());
+    DbEntity removedEntity = operation.getEntity();
 
-    if(removedEntity == null) {
-      throw new OptimisticException(removedEntity);
-    } else {
-      if (removedEntity instanceof HasDbRevision) {
-        HasDbRevision removedRevision = (HasDbRevision) removedEntity;
-        if(removedRevision.getRevision() != ((HasDbRevision) dbEntity).getRevision()) {
-          throw new OptimisticLockException(removedEntity);
-        }
+    if (removedEntity instanceof HasDbRevision) {
+      HasDbRevision removedRevision = (HasDbRevision) removedEntity;
+      HasDbRevision dbRevision = (HasDbRevision) map.remove(removedEntity.getId());
+      ensureNotNull(OptimisticLockingException.class, "dbRevision", dbRevision);
+      if (dbRevision.getRevision() != removedRevision.getRevision()) {
+        throw new OptimisticLockingException(removedEntity +  " was updated by another transaction");
       }
     }
+    else {
+      map.remove(removedEntity.getId());
+    }
+  }
 
+  protected void updateEntity(DbEntityOperation operation) {
+    IMap<String, DbEntity> map = getMap(operation);
+    DbEntity updatedEntity = operation.getEntity();
+
+    if (updatedEntity instanceof HasDbRevision) {
+      HasDbRevision updatedRevision = (HasDbRevision) updatedEntity;
+      int oldRevision = updatedRevision.getRevision();
+      updatedRevision.setRevision(updatedRevision.getRevisionNext());
+      HasDbRevision dbRevision = (HasDbRevision) map.put(updatedEntity.getId(), updatedEntity);
+      ensureNotNull(OptimisticLockingException.class, "dbRevision", dbRevision);
+      if (dbRevision.getRevision() != oldRevision) {
+        throw new OptimisticLockingException(updatedEntity + " was updated by another transaction");
+      }
+    }
+    else {
+      map.put(updatedEntity.getId(), updatedEntity);
+    }
   }
 
   protected void deleteBulk(DbBulkOperation operation) {
@@ -104,11 +116,6 @@ public class HazelcastSession extends AbstractPersistenceSession {
     DeleteStatementHandler statementHandler = HazelcastSessionFactory.getDeleteStatementHandler(statement);
     statementHandler.execute(this, parameter);
 
-  }
-
-  protected void updateEntity(DbEntityOperation operation) {
-    DbEntity entity = operation.getEntity();
-    getMap(operation).put(entity.getId(), entity);
   }
 
   protected void updateBulk(DbBulkOperation operation) {
@@ -183,7 +190,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
 
   @SuppressWarnings("unchecked")
   public <T extends DbEntity> T selectById(Class<T> type, String id) {
-    return (T) getMap(type).get(id);
+    return getMap(type).get(id);
   }
 
   public Object selectOne(String statement, Object parameter) {
