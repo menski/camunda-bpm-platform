@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
 
 /**
  * @author Sebastian Menski
@@ -27,7 +28,12 @@ public class SelectEntityByIdHandler extends TypeAwareStatementHandler implement
 
   @SuppressWarnings("unchecked")
   public <T extends DbEntity> T execute(HazelcastSession session, Object parameter) {
-    return (T) session.getMap(type).get(parameter);
+    AbstractPortableEntity<T> abstractPortableEntity = (AbstractPortableEntity<T>) session.getMap(type).get(parameter);
+    if(abstractPortableEntity != null) {
+      return abstractPortableEntity.getEntity();
+    } else {
+      return null;
+    }
   }
 
 }

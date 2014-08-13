@@ -16,6 +16,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MulticastConfig;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -29,6 +30,7 @@ import java.util.logging.Logger;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastPersistenceProviderFactory;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableSerialization;
 import org.camunda.bpm.engine.impl.interceptor.CommandContextInterceptor;
 import org.camunda.bpm.engine.impl.interceptor.CommandInterceptor;
 import org.camunda.bpm.engine.impl.interceptor.LogInterceptor;
@@ -110,7 +112,12 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
 
         NetworkConfig networkConfig = new NetworkConfig();
         networkConfig.setJoin(joinConfig);
+
         hazelcastConfig.setNetworkConfig(networkConfig);
+
+        SerializationConfig serializationConfig = PortableSerialization.defaultSerializationConfig();
+
+        hazelcastConfig.setSerializationConfig(serializationConfig);
       }
       hazelcastInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
     }

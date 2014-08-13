@@ -14,6 +14,7 @@ package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
 
 import com.hazelcast.core.IMap;
 
@@ -28,7 +29,7 @@ public class DeleteEntityByIdHandler extends AbstractDeleteStatementHandler {
   }
 
   public void execute(HazelcastSession session, Object parameter) {
-    IMap<String,? extends DbEntity> map = session.getMap(type);
+    IMap<String,? extends AbstractPortableEntity<?>> map = session.getMap(type);
     map.remove(parameter);
   }
 

@@ -14,11 +14,14 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
 import org.camunda.bpm.engine.impl.persistence.entity.*;
@@ -73,9 +76,9 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntityStatementHandler.put("selectJob", new SelectEntityByIdHandler(JobEntity.class));
 
     selectEntitiesStatementHandler = new HashMap<String, SelectEntitiesStatementHandler>();
-    selectEntitiesStatementHandler.put("selectExecutionsByParentExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "parentExecutionId"));
-    selectEntitiesStatementHandler.put("selectExecutionsByProcessInstanceId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "processInstanceId"));
-    selectEntitiesStatementHandler.put("selectSubProcessInstanceBySuperCaseExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "superExecutionId"));
+    selectEntitiesStatementHandler.put("selectExecutionsByParentExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PARENT_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectExecutionsByProcessInstanceId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_INSTANCE_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectSubProcessInstanceBySuperCaseExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.SUPER_EXECUTION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectTasksByParentTaskId", new SelectEntitiesByKeyHandler(TaskEntity.class, "parentTaskId"));
     selectEntitiesStatementHandler.put("selectTasksByExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "executionId"));
     selectEntitiesStatementHandler.put("selectTaskByCaseExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "caseExecutionId"));

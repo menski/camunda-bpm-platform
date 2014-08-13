@@ -35,7 +35,6 @@ import org.camunda.bpm.engine.impl.core.instance.CoreExecution;
 import org.camunda.bpm.engine.impl.core.operation.CoreAtomicOperation;
 import org.camunda.bpm.engine.impl.core.variable.CoreVariableInstance;
 import org.camunda.bpm.engine.impl.core.variable.CoreVariableStore;
-import org.camunda.bpm.engine.impl.db.DbSqlSession;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbReferences;
@@ -1283,6 +1282,11 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   public String getProcessInstanceId() {
     return processInstanceId;
   }
+
+  public void setProcessInstanceId(String processInstanceId) {
+    this.processInstanceId = processInstanceId;
+  }
+
   public String getParentId() {
     return parentId;
   }
@@ -1296,6 +1300,14 @@ public class ExecutionEntity extends PvmExecutionImpl implements
 
   public void setRevision(int revision) {
     this.revision = revision;
+  }
+
+  public void setActivityId(String activityId) {
+    this.activityId = activityId;
+  }
+
+  public void setSuperExecutionId(String superExecutionId) {
+    this.superExecutionId = superExecutionId;
   }
 
   public boolean hasReferenceTo(DbEntity entity) {
