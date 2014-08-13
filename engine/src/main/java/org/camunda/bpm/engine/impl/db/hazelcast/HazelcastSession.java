@@ -13,20 +13,36 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_BYTE_ARRAY_MAP_NAME;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_DEPLOYMENT_MAP_NAME;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_EXECUTION_MAP_NAME;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_PROCESS_DEFINITION_MAP_NAME;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.ENGINE_PROPERTY_MAP_NAME;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
-
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
+import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.hazelcast.query.SqlPredicate;
 
 /**
  * @author Sebastian Menski
  */
 public class HazelcastSession extends AbstractPersistenceSession {
+
+  private final static Logger log = Logger.getLogger(HazelcastSession.class.getName());
 
   protected HazelcastInstance hazelcastInstance;
 
@@ -34,16 +50,16 @@ public class HazelcastSession extends AbstractPersistenceSession {
     this.hazelcastInstance = hazelcastInstance;
   }
 
-  protected IMap<Object, Object> getMap(String mapName) {
+  public IMap<Object, Object> getMap(String mapName) {
     return hazelcastInstance.getMap(mapName);
   }
 
-  protected IMap<Object, Object> getMap(DbEntityOperation operation) {
-    return getMap(operation.getEntityType());
+  public <T extends DbEntity> IMap<String, T> getMap(DbEntityOperation operation) {
+    return (IMap<String, T>) getMap(operation.getEntityType());
   }
 
-  protected IMap<Object, Object> getMap(Class<? extends DbEntity> type) {
-    return getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
+  public <T extends DbEntity> IMap<String, T> getMap(Class<T> type) {
+    return (IMap) getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
   }
 
 
@@ -57,7 +73,16 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void deleteBulk(DbBulkOperation operation) {
-    // TODO: implement
+    String statement = operation.getStatement();
+
+    if (log.isLoggable(Level.FINE)) {
+      log.fine("executing deleteBulk " + statement);
+    }
+
+    Object parameter = operation.getParameter();
+
+    DeleteStatementHandler statementHandler = HazelcastSessionFactory.getDeleteStatementHandler(statement);
+    statementHandler.execute(this, parameter);
 
   }
 
@@ -130,8 +155,10 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   public List<?> selectList(String statement, Object parameter) {
-    // TODO: implement
-    return null;
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("executing selectList "+statement);
+    }
+    return Collections.emptyList();
   }
 
   @SuppressWarnings("unchecked")
@@ -140,7 +167,26 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   public Object selectOne(String statement, Object parameter) {
-    // TODO: implement
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("executing selectOne "+statement);
+    }
+
+    if("selectLatestProcessDefinitionByKey".equals(statement)) {
+      IMap<String, ProcessDefinitionEntity> map = getMap(ProcessDefinitionEntity.class);
+      Collection<ProcessDefinitionEntity> processDefintions = map.values(new SqlPredicate("key = '"+parameter+"'"));
+      ProcessDefinitionEntity latestVersion = null;
+      for (ProcessDefinitionEntity processDefinitionEntity : processDefintions) {
+        if(latestVersion == null) {
+          latestVersion = processDefinitionEntity;
+        } else {
+          if(latestVersion.getVersion() < processDefinitionEntity.getVersion()) {
+            latestVersion = processDefinitionEntity;
+          }
+        }
+      }
+      return latestVersion;
+    }
+
     return null;
   }
 
@@ -172,5 +218,16 @@ public class HazelcastSession extends AbstractPersistenceSession {
   public void close() {
     // TODO: implement
 
+  }
+
+  public Map<String, Long> getMapCounts() {
+    Map<String, Long> counts = new HashMap<String, Long>();
+
+    Collection<String> mapNames = HazelcastSessionFactory.entityMapping.values();
+    for (String mapName : mapNames) {
+      counts.put(mapName, Integer.valueOf(getMap(mapName).size()).longValue());
+    }
+
+    return counts;
   }
 }

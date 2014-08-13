@@ -16,12 +16,16 @@ package org.camunda.bpm.engine.impl.test;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
+
 import junit.framework.AssertionFailedError;
+
 import org.camunda.bpm.engine.*;
 import org.camunda.bpm.engine.impl.ProcessEngineImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.hazelcast.HazelcastProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.db.PersistenceSession;
+import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
@@ -47,7 +51,8 @@ public abstract class AbstractProcessEngineTestCase extends PvmTestCase {
   }
 
   private static final List<String> TABLENAMES_EXCLUDED_FROM_DB_CLEAN_CHECK = Arrays.asList(
-    "ACT_GE_PROPERTY"
+    "ACT_GE_PROPERTY",
+    HazelcastSessionFactory.ENGINE_PROPERTY_MAP_NAME
   );
 
   protected ProcessEngine processEngine;
@@ -117,47 +122,52 @@ public abstract class AbstractProcessEngineTestCase extends PvmTestCase {
    * If the DB is not clean, it is cleaned by performing a create a drop. */
   protected void assertAndEnsureCleanDb() throws Throwable {
     log.fine("verifying that db is clean after test");
-
+    Map<String, Long> tableCounts = null;
     if (processEngineConfiguration instanceof HazelcastProcessEngineConfiguration) {
-      // FIXME: test db clean
+      CommandExecutor commandExecutor = ((ProcessEngineImpl) processEngine).getProcessEngineConfiguration().getCommandExecutorTxRequired();
+      tableCounts = commandExecutor.execute(new Command<Map<String, Long>>() {
+        public Map<String, Long> execute(CommandContext commandContext) {
+          return commandContext.getSession(HazelcastSession.class).getMapCounts();
+        }
+      });
+    } else {
+      tableCounts = managementService.getTableCount();
     }
-    else {
-      Map<String, Long> tableCounts = managementService.getTableCount();
-      StringBuilder outputMessage = new StringBuilder();
-      for (String tableName : tableCounts.keySet()) {
-        String tableNameWithoutPrefix = tableName.replace(processEngineConfiguration.getDatabaseTablePrefix(), "");
-        if (!TABLENAMES_EXCLUDED_FROM_DB_CLEAN_CHECK.contains(tableNameWithoutPrefix)) {
-          Long count = tableCounts.get(tableName);
-          if (count != 0L) {
-            outputMessage.append("  " + tableName + ": " + count + " record(s) ");
-          }
+
+    StringBuilder outputMessage = new StringBuilder();
+    for (String tableName : tableCounts.keySet()) {
+      String tableNameWithoutPrefix = tableName.replace(processEngineConfiguration.getDatabaseTablePrefix(), "");
+      if (!TABLENAMES_EXCLUDED_FROM_DB_CLEAN_CHECK.contains(tableNameWithoutPrefix)) {
+        Long count = tableCounts.get(tableName);
+        if (count != 0L) {
+          outputMessage.append("  " + tableName + ": " + count + " record(s)\n");
         }
       }
-      if (outputMessage.length() > 0) {
-        outputMessage.insert(0, "DB NOT CLEAN: \n");
-        log.severe(EMPTY_LINE);
-        log.severe(outputMessage.toString());
+    }
+    if (outputMessage.length() > 0) {
+      outputMessage.insert(0, "DB NOT CLEAN: \n");
+      log.severe(EMPTY_LINE);
+      log.severe(outputMessage.toString());
 
-        log.info("dropping and recreating db");
+      log.info("dropping and recreating db");
 
-        CommandExecutor commandExecutor = ((ProcessEngineImpl) processEngine).getProcessEngineConfiguration().getCommandExecutorTxRequired();
-        commandExecutor.execute(new Command<Object>() {
-          public Object execute(CommandContext commandContext) {
-            PersistenceSession persistenceSession = commandContext.getSession(PersistenceSession.class);
-            persistenceSession.dbSchemaDrop();
-            persistenceSession.dbSchemaCreate();
-            return null;
-          }
-        });
-
-        if (exception != null) {
-          throw exception;
-        } else {
-          Assert.fail(outputMessage.toString());
+      CommandExecutor commandExecutor = ((ProcessEngineImpl) processEngine).getProcessEngineConfiguration().getCommandExecutorTxRequired();
+      commandExecutor.execute(new Command<Object>() {
+        public Object execute(CommandContext commandContext) {
+          PersistenceSession persistenceSession = commandContext.getSession(PersistenceSession.class);
+          persistenceSession.dbSchemaDrop();
+          persistenceSession.dbSchemaCreate();
+          return null;
         }
+      });
+
+      if (exception != null) {
+        throw exception;
       } else {
-        log.info("database was clean");
+        Assert.fail(outputMessage.toString());
       }
+    } else {
+      log.info("database was clean");
     }
   }
 

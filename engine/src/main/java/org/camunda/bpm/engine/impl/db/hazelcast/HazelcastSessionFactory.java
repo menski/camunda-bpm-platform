@@ -13,14 +13,25 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import com.hazelcast.core.HazelcastInstance;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntitiesByDeploymentIdHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByIdHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
-import org.camunda.bpm.engine.impl.persistence.entity.*;
+import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
+
+import com.hazelcast.core.HazelcastInstance;
 
 /**
  * @author Sebastian Menski
@@ -33,15 +44,30 @@ public class HazelcastSessionFactory implements SessionFactory {
   public final static String ENGINE_PROPERTY_MAP_NAME = "cam.engine.property";
   public final static String ENGINE_EXECUTION_MAP_NAME = "cam.engine.execution";
 
+  public final static String ENGINE_CASE_DEFINITION_MAP_NAME = "cam.engine.case_definition";
+
   public final static Map<Class<? extends DbEntity>, String> entityMapping;
 
   static {
     entityMapping = new HashMap<Class<? extends DbEntity>, String>();
     entityMapping.put(DeploymentEntity.class, ENGINE_DEPLOYMENT_MAP_NAME);
     entityMapping.put(ResourceEntity.class, ENGINE_BYTE_ARRAY_MAP_NAME);
+    entityMapping.put(ByteArrayEntity.class, ENGINE_BYTE_ARRAY_MAP_NAME);
     entityMapping.put(ProcessDefinitionEntity.class, ENGINE_PROCESS_DEFINITION_MAP_NAME);
     entityMapping.put(PropertyEntity.class, ENGINE_PROPERTY_MAP_NAME);
     entityMapping.put(ExecutionEntity.class, ENGINE_EXECUTION_MAP_NAME);
+
+    entityMapping.put(CaseDefinitionEntity.class, ENGINE_CASE_DEFINITION_MAP_NAME);
+  }
+
+  public static Map<String, DeleteStatementHandler> deleteStatementHandler;
+
+  static {
+    deleteStatementHandler = new HashMap<String, DeleteStatementHandler>();
+    deleteStatementHandler.put("deleteResourcesByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(ResourceEntity.class));
+    deleteStatementHandler.put("deleteCaseDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(CaseDefinitionEntity.class));
+    deleteStatementHandler.put("deleteProcessDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(ProcessDefinitionEntity.class));
+    deleteStatementHandler.put("deleteDeployment", new DeleteEntityByIdHandler(DeploymentEntity.class));
   }
 
   protected HazelcastInstance hazelcastInstance;
@@ -60,8 +86,14 @@ public class HazelcastSessionFactory implements SessionFactory {
 
   public static String getMapNameForEntityType(Class<? extends DbEntity> type) {
     String mapName = entityMapping.get(type);
-    EnsureUtil.ensureNotNull("Entity type " + type + "currently not supported", "mapName", mapName);
+    EnsureUtil.ensureNotNull("Entity type '" + type + "' currently not supported", "mapName", mapName);
     return mapName;
+  }
+
+  public static DeleteStatementHandler getDeleteStatementHandler(String statement) {
+    DeleteStatementHandler statementHandler = deleteStatementHandler.get(statement);
+    EnsureUtil.ensureNotNull("Delete statement '"+statement+"'currently not supported", "statementHandler", statementHandler);
+    return statementHandler;
   }
 
 }

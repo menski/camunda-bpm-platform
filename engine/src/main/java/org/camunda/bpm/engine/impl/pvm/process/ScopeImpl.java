@@ -32,8 +32,8 @@ public abstract class ScopeImpl extends CoreActivity implements PvmScope {
 
   private static final long serialVersionUID = 1L;
 
-  protected List<ActivityImpl> activities = new ArrayList<ActivityImpl>();
-  protected Map<String, ActivityImpl> namedActivities = new HashMap<String, ActivityImpl>();
+  protected transient List<ActivityImpl> activities = new ArrayList<ActivityImpl>();
+  protected transient Map<String, ActivityImpl> namedActivities = new HashMap<String, ActivityImpl>();
 
   protected ProcessDefinitionImpl processDefinition;
 

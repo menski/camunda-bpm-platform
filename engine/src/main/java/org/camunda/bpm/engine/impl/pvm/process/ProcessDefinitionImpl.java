@@ -37,10 +37,10 @@ public class ProcessDefinitionImpl extends ScopeImpl implements PvmProcessDefini
 
   protected String name;
   protected String description;
-  protected ActivityImpl initial;
-  protected Map<ActivityImpl, List<ActivityImpl>> initialActivityStacks = new HashMap<ActivityImpl, List<ActivityImpl>>();
-  protected List<LaneSet> laneSets;
-  protected ParticipantProcess participantProcess;
+  protected transient ActivityImpl initial;
+  protected transient Map<ActivityImpl, List<ActivityImpl>> initialActivityStacks = new HashMap<ActivityImpl, List<ActivityImpl>>();
+  protected transient List<LaneSet> laneSets;
+  protected transient ParticipantProcess participantProcess;
 
   public ProcessDefinitionImpl(String id) {
     super(id, null);

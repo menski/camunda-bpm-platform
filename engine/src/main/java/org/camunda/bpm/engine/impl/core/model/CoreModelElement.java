@@ -34,13 +34,13 @@ public abstract class CoreModelElement implements Serializable {
 
   protected String id;
   protected String name;
-  protected Map<String, Object> properties;
+  protected transient Map<String, Object> properties;
 
   /** contains built-in listeners */
-  protected Map<String, List<DelegateListener<? extends BaseDelegateExecution>>> builtInListeners = new HashMap<String, List<DelegateListener<? extends BaseDelegateExecution>>>();
+  protected transient Map<String, List<DelegateListener<? extends BaseDelegateExecution>>> builtInListeners = new HashMap<String, List<DelegateListener<? extends BaseDelegateExecution>>>();
 
   /** contains all listeners (built-in + user-provided) */
-  protected Map<String, List<DelegateListener<? extends BaseDelegateExecution>>> listeners = new HashMap<String, List<DelegateListener<? extends BaseDelegateExecution>>>();
+  protected transient Map<String, List<DelegateListener<? extends BaseDelegateExecution>>> listeners = new HashMap<String, List<DelegateListener<? extends BaseDelegateExecution>>>();
 
   public CoreModelElement(String id) {
     this.id = id;
