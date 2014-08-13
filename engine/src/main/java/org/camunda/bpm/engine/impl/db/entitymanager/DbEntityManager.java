@@ -95,12 +95,12 @@ public class DbEntityManager implements Session {
     if(firstResult == -1 ||  maxResults==-1) {
       return Collections.EMPTY_LIST;
     }
-    List loadedObjects = persistenceProvider.executeSelectList(statement, parameter);
+    List loadedObjects = persistenceProvider.selectList(statement, parameter);
     return filterLoadedObjects(loadedObjects);
   }
 
   public Object selectOne(String statement, Object parameter) {
-    Object result = persistenceProvider.executeSelectOne(statement, parameter);
+    Object result = persistenceProvider.selectOne(statement, parameter);
     if (result instanceof DbEntity) {
       DbEntity loadedObject = (DbEntity) result;
       result = cacheFilter(loadedObject);
@@ -110,7 +110,7 @@ public class DbEntityManager implements Session {
 
   @SuppressWarnings("unchecked")
   public boolean selectBoolean(String statement, Object parameter) {
-    List<String> result = (List<String>) persistenceProvider.executeSelectList(statement, parameter);
+    List<String> result = (List<String>) persistenceProvider.selectList(statement, parameter);
     if(result != null) {
       return result.contains(1);
     }
@@ -123,7 +123,7 @@ public class DbEntityManager implements Session {
     if (persistentObject!=null) {
       return persistentObject;
     }
-    persistentObject = persistenceProvider.executeSelectById(entityClass, id);
+    persistentObject = persistenceProvider.selectById(entityClass, id);
 
     if (persistentObject==null) {
       return null;
@@ -168,7 +168,7 @@ public class DbEntityManager implements Session {
   }
 
   public void lock(String statement) {
-    persistenceProvider.executeLock(statement);
+    persistenceProvider.lock(statement);
   }
 
   public boolean isDirty(DbEntity dbEntity) {

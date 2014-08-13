@@ -96,12 +96,12 @@ public class DbSqlSession implements Session, PersistenceProvider {
 
   // select ////////////////////////////////////////////
 
-  public List<?> executeSelectList(String statement, Object parameter){
+  public List<?> selectList(String statement, Object parameter){
     statement = dbSqlSessionFactory.mapStatement(statement);
     return sqlSession.selectList(statement, parameter);
   }
 
-  public <T extends DbEntity> T executeSelectById(Class<T> type, String id) {
+  public <T extends DbEntity> T selectById(Class<T> type, String id) {
     String selectStatement = dbSqlSessionFactory.getSelectStatement(type);
     selectStatement = dbSqlSessionFactory.mapStatement(selectStatement);
     ensureNotNull("no select statement for " + type + " in the ibatis mapping files", "selectStatement", selectStatement);
@@ -109,14 +109,14 @@ public class DbSqlSession implements Session, PersistenceProvider {
     return (T) sqlSession.selectOne(selectStatement, id);
   }
 
-  public Object executeSelectOne(String statement, Object parameter) {
+  public Object selectOne(String statement, Object parameter) {
     statement = dbSqlSessionFactory.mapStatement(statement);
     return sqlSession.selectOne(statement, parameter);
   }
 
   // lock ////////////////////////////////////////////
 
-  public void executeLock(String statement) {
+  public void lock(String statement) {
     // do not perform locking if H2 database is used. H2 uses table level locks
     // by default which may cause deadlocks if the deploy command needs to get a new
     // Id using the DbIdGenerator while performing a deployment.

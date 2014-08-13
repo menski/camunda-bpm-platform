@@ -23,15 +23,17 @@ import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
  */
 public interface PersistenceProvider {
 
+  // Db Operations /////////////////////////////////
+
   void executeDbOperation(DbOperation operation);
 
-  List<?> executeSelectList(String statement, Object parameter);
+  List<?> selectList(String statement, Object parameter);
 
-  <T extends DbEntity> T executeSelectById(Class<T> type, String id);
+  <T extends DbEntity> T selectById(Class<T> type, String id);
 
-  Object executeSelectOne(String statement, Object parameter);
+  Object selectOne(String statement, Object parameter);
 
-  void executeLock(String statement);
+  void lock(String statement);
 
   // schema operations ////////////////////////////
 
