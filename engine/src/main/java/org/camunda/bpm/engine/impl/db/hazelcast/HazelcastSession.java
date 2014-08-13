@@ -27,12 +27,17 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.persistence.OptimisticLockException;
+
+import org.apache.openjpa.util.OptimisticException;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
+
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.SqlPredicate;
@@ -69,7 +74,22 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void deleteEntity(DbEntityOperation operation) {
-    getMap(operation).delete(operation.getEntity().getId());
+    IMap<String, DbEntity> map = getMap(operation);
+
+    DbEntity dbEntity = operation.getEntity();
+    DbEntity removedEntity = map.remove(dbEntity.getId());
+
+    if(removedEntity == null) {
+      throw new OptimisticException(removedEntity);
+    } else {
+      if (removedEntity instanceof HasDbRevision) {
+        HasDbRevision removedRevision = (HasDbRevision) removedEntity;
+        if(removedRevision.getRevision() != ((HasDbRevision) dbEntity).getRevision()) {
+          throw new OptimisticLockException(removedEntity);
+        }
+      }
+    }
+
   }
 
   protected void deleteBulk(DbBulkOperation operation) {
