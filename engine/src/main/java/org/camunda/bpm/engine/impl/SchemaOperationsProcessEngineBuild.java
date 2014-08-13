@@ -45,7 +45,7 @@ public final class SchemaOperationsProcessEngineBuild implements Command<Object>
     return null;
   }
 
-  public void dbCreateHistoryLevel(DbEntityManager entityManager) {
+  public static void dbCreateHistoryLevel(DbEntityManager entityManager) {
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
     int configuredHistoryLevel = processEngineConfiguration.getHistoryLevel();
     PropertyEntity property = new PropertyEntity("historyLevel", Integer.toString(configuredHistoryLevel));

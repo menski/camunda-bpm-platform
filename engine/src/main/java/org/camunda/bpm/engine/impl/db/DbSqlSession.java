@@ -13,15 +13,7 @@
 
 package org.camunda.bpm.engine.impl.db;
 
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -29,38 +21,19 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.apache.ibatis.session.SqlSession;
-import org.camunda.bpm.engine.OptimisticLockingException;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
-import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.WrongDbException;
-import org.camunda.bpm.engine.impl.DeploymentQueryImpl;
-import org.camunda.bpm.engine.impl.ExecutionQueryImpl;
-import org.camunda.bpm.engine.impl.GroupQueryImpl;
-import org.camunda.bpm.engine.impl.HistoricActivityInstanceQueryImpl;
-import org.camunda.bpm.engine.impl.HistoricDetailQueryImpl;
-import org.camunda.bpm.engine.impl.HistoricProcessInstanceQueryImpl;
-import org.camunda.bpm.engine.impl.HistoricTaskInstanceQueryImpl;
-import org.camunda.bpm.engine.impl.HistoricVariableInstanceQueryImpl;
-import org.camunda.bpm.engine.impl.JobQueryImpl;
-import org.camunda.bpm.engine.impl.ProcessDefinitionQueryImpl;
-import org.camunda.bpm.engine.impl.ProcessInstanceQueryImpl;
-import org.camunda.bpm.engine.impl.TaskQueryImpl;
-import org.camunda.bpm.engine.impl.UserQueryImpl;
+import org.camunda.bpm.engine.*;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
-import org.camunda.bpm.engine.impl.identity.db.DbGroupQueryImpl;
-import org.camunda.bpm.engine.impl.identity.db.DbUserQueryImpl;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.util.ClassNameUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
+
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 
 /** responsibilities:
@@ -144,8 +117,13 @@ public class DbSqlSession implements Session, PersistenceProvider {
   // lock ////////////////////////////////////////////
 
   public void executeLock(String statement) {
-    String mappedStatement = dbSqlSessionFactory.mapStatement(statement);
-    sqlSession.update(mappedStatement);
+    // do not perform locking if H2 database is used. H2 uses table level locks
+    // by default which may cause deadlocks if the deploy command needs to get a new
+    // Id using the DbIdGenerator while performing a deployment.
+    if (!"h2".equals(dbSqlSessionFactory.getDatabaseType())) {
+      String mappedStatement = dbSqlSessionFactory.mapStatement(statement);
+      sqlSession.update(mappedStatement);
+    }
   }
 
   // insert //////////////////////////////////////////
@@ -504,24 +482,24 @@ public class DbSqlSession implements Session, PersistenceProvider {
     return dbSqlSessionFactory.getDatabaseTablePrefix() + tableName;
   }
 
-  protected void dbSchemaUpgrade(String component, String dbVersion) {
-    log.info("upgrading activiti "+component+" schema from "+dbVersion+" to "+ProcessEngine.VERSION);
+  public void dbSchemaUpdate() {
 
-    if (dbVersion.endsWith("-SNAPSHOT")) {
-      dbVersion = dbVersion.substring(0, dbVersion.length()-"-SNAPSHOT".length());
+    if (!isEngineTablePresent()) {
+      dbSchemaCreateEngine();
     }
-    int minorDbVersionNumber = Integer.parseInt(dbVersion.substring(2));
 
-    String libraryVersion = ProcessEngine.VERSION;
-    if (ProcessEngine.VERSION.endsWith("-SNAPSHOT")) {
-      libraryVersion = ProcessEngine.VERSION.substring(0, ProcessEngine.VERSION.length()-"-SNAPSHOT".length());
+    if (!isHistoryTablePresent() && dbSqlSessionFactory.isDbHistoryUsed()) {
+      dbSchemaCreateHistory();
     }
-    int minorLibraryVersionNumber = Integer.parseInt(libraryVersion.substring(2));
 
-    while (minorDbVersionNumber<minorLibraryVersionNumber) {
-      executeSchemaResource("upgrade", component, getResourceForDbOperation("upgrade", "upgradestep.5"+minorDbVersionNumber+".to.5"+(minorDbVersionNumber+1), component), true);
-      minorDbVersionNumber++;
+    if (!isIdentityTablePresent() && dbSqlSessionFactory.isDbIdentityUsed()) {
+      dbSchemaCreateIdentity();
     }
+
+    if (!isCaseDefinitionTablePresent() && dbSqlSessionFactory.isCmmnEnabled()) {
+      dbSchemaCreateCmmn();
+    }
+
   }
 
   public String getResourceForDbOperation(String directory, String operation, String component) {
@@ -669,7 +647,7 @@ public class DbSqlSession implements Session, PersistenceProvider {
     } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE.equals(databaseSchemaUpdate)) {
       dbSchemaCheckVersion();
     } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE.equals(databaseSchemaUpdate)) {
-      throw new UnsupportedOperationException("DbSchema Update is not supported.");
+      dbSchemaUpdate();
     }
 
   }
@@ -679,51 +657,6 @@ public class DbSqlSession implements Session, PersistenceProvider {
     if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP.equals(databaseSchemaUpdate)) {
       dbSchemaDrop();
     }
-  }
-
-  // query factory methods ////////////////////////////////////////////////////
-
-  public DeploymentQueryImpl createDeploymentQuery() {
-    return new DeploymentQueryImpl();
-  }
-  public ProcessDefinitionQueryImpl createProcessDefinitionQuery() {
-    return new ProcessDefinitionQueryImpl();
-  }
-  public CaseDefinitionQueryImpl createCaseDefinitionQuery() {
-    return new CaseDefinitionQueryImpl();
-  }
-  public ProcessInstanceQueryImpl createProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl();
-  }
-  public ExecutionQueryImpl createExecutionQuery() {
-    return new ExecutionQueryImpl();
-  }
-  public TaskQueryImpl createTaskQuery() {
-    return new TaskQueryImpl();
-  }
-  public JobQueryImpl createJobQuery() {
-    return new JobQueryImpl();
-  }
-  public HistoricProcessInstanceQueryImpl createHistoricProcessInstanceQuery() {
-    return new HistoricProcessInstanceQueryImpl();
-  }
-  public HistoricActivityInstanceQueryImpl createHistoricActivityInstanceQuery() {
-    return new HistoricActivityInstanceQueryImpl();
-  }
-  public HistoricTaskInstanceQueryImpl createHistoricTaskInstanceQuery() {
-    return new HistoricTaskInstanceQueryImpl();
-  }
-  public HistoricDetailQueryImpl createHistoricDetailQuery() {
-    return new HistoricDetailQueryImpl();
-  }
-  public HistoricVariableInstanceQueryImpl createHistoricVariableInstanceQuery() {
-    return new HistoricVariableInstanceQueryImpl();
-  }
-  public UserQueryImpl createUserQuery() {
-    return new DbUserQueryImpl();
-  }
-  public GroupQueryImpl createGroupQuery() {
-    return new DbGroupQueryImpl();
   }
 
   // getters and setters //////////////////////////////////////////////////////

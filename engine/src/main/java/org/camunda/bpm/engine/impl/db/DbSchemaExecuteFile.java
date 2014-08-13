@@ -51,7 +51,7 @@ public class DbSchemaExecuteFile {
 
       public Void execute(CommandContext commandContext) {
 
-        commandContext.getDbEntityManger()
+        commandContext.getDbSqlSession()
           .executeSchemaResource(schemaFileResourceName);
 
         return null;

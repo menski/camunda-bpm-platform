@@ -36,7 +36,7 @@ public class DbSchemaDrop {
     commandExecutor.execute(new Command<Object> (){
       public Object execute(CommandContext commandContext) {
         commandContext
-          .getSession(DbSqlSession.class)
+          .getSession(PersistenceProvider.class)
           .dbSchemaDrop();
         return null;
       }

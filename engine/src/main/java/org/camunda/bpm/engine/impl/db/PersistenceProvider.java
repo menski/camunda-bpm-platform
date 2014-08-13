@@ -35,6 +35,14 @@ public interface PersistenceProvider {
 
   // schema operations ////////////////////////////
 
+  void dbSchemaCreate();
+
+  void dbSchemaDrop();
+
+  void dbSchemaPrune();
+
+  void dbSchemaUpdate();
+
   void performSchemaOperationsProcessEngineBuild();
 
   void performSchemaOperationsProcessEngineClose();

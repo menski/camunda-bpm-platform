@@ -13,31 +13,14 @@
 
 package org.camunda.bpm.engine.impl.test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
-
 import junit.framework.AssertionFailedError;
-
-import org.camunda.bpm.engine.AuthorizationService;
-import org.camunda.bpm.engine.CaseService;
-import org.camunda.bpm.engine.FormService;
-import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.IdentityService;
-import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.*;
 import org.camunda.bpm.engine.impl.ProcessEngineImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.db.DbSqlSession;
+import org.camunda.bpm.engine.impl.db.PersistenceProvider;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
@@ -155,9 +138,9 @@ public abstract class AbstractProcessEngineTestCase extends PvmTestCase {
       CommandExecutor commandExecutor = ((ProcessEngineImpl)processEngine).getProcessEngineConfiguration().getCommandExecutorTxRequired();
       commandExecutor.execute(new Command<Object>() {
         public Object execute(CommandContext commandContext) {
-          DbSqlSession session = commandContext.getSession(DbSqlSession.class);
-          session.dbSchemaDrop();
-          session.dbSchemaCreate();
+          PersistenceProvider persistenceProvider = commandContext.getSession(PersistenceProvider.class);
+          persistenceProvider.dbSchemaDrop();
+          persistenceProvider.dbSchemaCreate();
           return null;
         }
       });

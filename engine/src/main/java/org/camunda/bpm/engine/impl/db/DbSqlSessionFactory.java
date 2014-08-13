@@ -259,7 +259,7 @@ public class DbSqlSessionFactory implements SessionFactory {
   protected boolean cmmnEnabled = true;
 
   public Class< ? > getSessionType() {
-    return PersistenceProvider.class;
+    return DbSqlSession.class;
   }
 
   public Session openSession() {

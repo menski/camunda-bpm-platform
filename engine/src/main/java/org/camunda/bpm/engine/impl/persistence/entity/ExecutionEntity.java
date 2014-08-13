@@ -39,6 +39,7 @@ import org.camunda.bpm.engine.impl.db.DbSqlSession;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbReferences;
+import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.event.CompensationEventHandler;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
 import org.camunda.bpm.engine.impl.history.handler.HistoryEventHandler;
@@ -863,7 +864,7 @@ public class ExecutionEntity extends PvmExecutionImpl implements
     this.replacedBy = (ExecutionEntity) replacedBy;
 
     CommandContext commandContext = Context.getCommandContext();
-    DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
+    DbEntityManager dbEntityManger = commandContext.getDbEntityManger();
 
     // update the related tasks
     for (TaskEntity task: getTasks()) {
@@ -885,7 +886,7 @@ public class ExecutionEntity extends PvmExecutionImpl implements
     // All tasks have been moved to 'replacedBy', safe to clear the list
     this.tasks.clear();
 
-    List<TaskEntity> tasks = dbSqlSession.findInCache(TaskEntity.class);
+    List<TaskEntity> tasks = dbEntityManger.getCachedEntitiesByType(TaskEntity.class);
     for (TaskEntity task: tasks) {
       if (id.equals(task.getExecutionId())) {
         task.setExecutionId(replacedBy.getId());

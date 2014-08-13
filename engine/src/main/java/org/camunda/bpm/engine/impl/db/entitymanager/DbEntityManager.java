@@ -12,30 +12,28 @@
  */
 package org.camunda.bpm.engine.impl.db.entitymanager;
 
-import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.*;
-import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.*;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.Page;
+import org.camunda.bpm.engine.impl.*;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
+import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.PersistenceProvider;
 import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
+import org.camunda.bpm.engine.impl.db.PersistenceProvider;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityCache;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationManager;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.*;
+import org.camunda.bpm.engine.impl.identity.db.DbGroupQueryImpl;
+import org.camunda.bpm.engine.impl.identity.db.DbUserQueryImpl;
 import org.camunda.bpm.engine.impl.interceptor.Session;
+
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.*;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.*;
 
 /**
  *
@@ -132,6 +130,10 @@ public class DbEntityManager implements Session {
     }
     dbEntityCache.putPersistent(persistentObject);
     return persistentObject;
+  }
+
+  public <T extends DbEntity> T getCachedEntity(Class<T> type, String id) {
+    return dbEntityCache.get(type, id);
   }
 
   public <T extends DbEntity> List<T> getCachedEntitiesByType(Class<T> type) {
@@ -266,11 +268,11 @@ public class DbEntityManager implements Session {
     dbEntityCache.setDeleted(dbEntity);
   }
 
-  public void bulkUpdate(Class<? extends DbEntity> entityType, String statement, Object parameter) {
+  public void update(Class<? extends DbEntity> entityType, String statement, Object parameter) {
     performBulkOperation(entityType, statement, parameter, UPDATE_BULK);
   }
 
-  public void bulkDelete(Class<? extends DbEntity> entityType, String statement, Object parameter) {
+  public void delete(Class<? extends DbEntity> entityType, String statement, Object parameter) {
     performBulkOperation(entityType, statement, parameter, DELETE_BULK);
   }
 
@@ -354,4 +356,48 @@ public class DbEntityManager implements Session {
     this.dbEntityCache = dbEntityCache;
   }
 
+  // query factory methods ////////////////////////////////////////////////////
+
+  public DeploymentQueryImpl createDeploymentQuery() {
+    return new DeploymentQueryImpl();
+  }
+  public ProcessDefinitionQueryImpl createProcessDefinitionQuery() {
+    return new ProcessDefinitionQueryImpl();
+  }
+  public CaseDefinitionQueryImpl createCaseDefinitionQuery() {
+    return new CaseDefinitionQueryImpl();
+  }
+  public ProcessInstanceQueryImpl createProcessInstanceQuery() {
+    return new ProcessInstanceQueryImpl();
+  }
+  public ExecutionQueryImpl createExecutionQuery() {
+    return new ExecutionQueryImpl();
+  }
+  public TaskQueryImpl createTaskQuery() {
+    return new TaskQueryImpl();
+  }
+  public JobQueryImpl createJobQuery() {
+    return new JobQueryImpl();
+  }
+  public HistoricProcessInstanceQueryImpl createHistoricProcessInstanceQuery() {
+    return new HistoricProcessInstanceQueryImpl();
+  }
+  public HistoricActivityInstanceQueryImpl createHistoricActivityInstanceQuery() {
+    return new HistoricActivityInstanceQueryImpl();
+  }
+  public HistoricTaskInstanceQueryImpl createHistoricTaskInstanceQuery() {
+    return new HistoricTaskInstanceQueryImpl();
+  }
+  public HistoricDetailQueryImpl createHistoricDetailQuery() {
+    return new HistoricDetailQueryImpl();
+  }
+  public HistoricVariableInstanceQueryImpl createHistoricVariableInstanceQuery() {
+    return new HistoricVariableInstanceQueryImpl();
+  }
+  public UserQueryImpl createUserQuery() {
+    return new DbUserQueryImpl();
+  }
+  public GroupQueryImpl createGroupQuery() {
+    return new DbGroupQueryImpl();
+  }
 }

@@ -16,6 +16,7 @@ package org.camunda.bpm.engine.impl.cmd;
 import java.io.InputStream;
 import org.camunda.bpm.engine.history.UserOperationLogEntry;
 import org.camunda.bpm.engine.impl.db.DbSqlSession;
+import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.persistence.entity.AttachmentEntity;
@@ -69,13 +70,13 @@ public class CreateAttachmentCmd implements Command<Attachment> {
     attachment.setProcessInstanceId(processInstanceId);
     attachment.setUrl(url);
 
-    DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
-    dbSqlSession.insert(attachment);
+    DbEntityManager dbEntityManger = commandContext.getDbEntityManger();
+    dbEntityManger.insert(attachment);
 
     if (content != null) {
       byte[] bytes = IoUtil.readInputStream(content, attachmentName);
       ByteArrayEntity byteArray = new ByteArrayEntity(bytes);
-      dbSqlSession.insert(byteArray);
+      dbEntityManger.insert(byteArray);
       attachment.setContentId(byteArray.getId());
     }
 

@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbSqlSession;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.incident.FailedJobIncidentHandler;
 import org.camunda.bpm.engine.impl.incident.IncidentHandler;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -101,11 +102,11 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
   }
 
   public void insert() {
-    DbSqlSession dbSqlSession = Context
+    DbEntityManager dbEntityManger = Context
       .getCommandContext()
       .getDbEntityManger();
 
-    dbSqlSession.insert(this);
+    dbEntityManger.insert(this);
 
     // add link to execution and deployment
     if(executionId != null) {
@@ -122,11 +123,11 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
   }
 
   public void delete(boolean incidentResolved) {
-    DbSqlSession dbSqlSession = Context
+    DbEntityManager dbEntityManger = Context
         .getCommandContext()
         .getDbEntityManger();
 
-    dbSqlSession.delete(this);
+    dbEntityManger.delete(this);
 
     // Also delete the job's exception byte array
     if (exceptionByteArrayId != null) {
