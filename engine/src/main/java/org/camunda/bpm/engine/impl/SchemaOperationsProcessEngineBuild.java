@@ -13,11 +13,11 @@
 package org.camunda.bpm.engine.impl;
 
 import java.util.logging.Logger;
-
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.db.PersistenceProvider;
+import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -34,9 +34,26 @@ public final class SchemaOperationsProcessEngineBuild implements Command<Object>
   private final static Logger log = Logger.getLogger(SchemaOperationsProcessEngineBuild.class.getName());
 
   public Object execute(CommandContext commandContext) {
-    commandContext
-      .getSession(PersistenceProvider.class)
-      .performSchemaOperationsProcessEngineBuild();
+    String databaseSchemaUpdate = Context.getProcessEngineConfiguration().getDatabaseSchemaUpdate();
+    PersistenceSession persistenceSession = commandContext.getSession(PersistenceSession.class);
+    if (ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_DROP_CREATE.equals(databaseSchemaUpdate)) {
+      try {
+        persistenceSession.dbSchemaDrop();
+      } catch (RuntimeException e) {
+        // ignore
+      }
+    }
+    if ( ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP.equals(databaseSchemaUpdate)
+      || ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_DROP_CREATE.equals(databaseSchemaUpdate)
+      || ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_CREATE.equals(databaseSchemaUpdate)
+      ) {
+      persistenceSession.dbSchemaCreate();
+    } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE.equals(databaseSchemaUpdate)) {
+      persistenceSession.dbSchemaCheckVersion();
+    } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE.equals(databaseSchemaUpdate)) {
+      persistenceSession.dbSchemaUpdate();
+    }
+
 
     DbEntityManager entityManager = commandContext.getSession(DbEntityManager.class);
     checkHistoryLevel(entityManager);

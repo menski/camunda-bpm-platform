@@ -12,7 +12,9 @@
  */
 package org.camunda.bpm.engine.impl;
 
-import org.camunda.bpm.engine.impl.db.PersistenceProvider;
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
+import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 
@@ -22,9 +24,10 @@ import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 final class SchemaOperationProcessEngineClose implements Command<Object> {
 
   public Object execute(CommandContext commandContext) {
-    commandContext
-      .getSession(PersistenceProvider.class)
-      .performSchemaOperationsProcessEngineClose();
+    String databaseSchemaUpdate = Context.getProcessEngineConfiguration().getDatabaseSchemaUpdate();
+    if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP.equals(databaseSchemaUpdate)) {
+      commandContext.getSession(PersistenceSession.class).dbSchemaDrop();
+    }
     return null;
   }
 }

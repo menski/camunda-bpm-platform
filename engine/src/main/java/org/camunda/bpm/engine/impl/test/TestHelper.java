@@ -24,7 +24,7 @@ import org.camunda.bpm.engine.impl.ProcessEngineImpl;
 import org.camunda.bpm.engine.impl.SchemaOperationsProcessEngineBuild;
 import org.camunda.bpm.engine.impl.bpmn.deployer.BpmnDeployer;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.db.PersistenceProvider;
+import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -144,9 +144,9 @@ public abstract class TestHelper {
         .getCommandExecutorTxRequired()
         .execute(new Command<Object>() {
           public Object execute(CommandContext commandContext) {
-            PersistenceProvider persistenceProvider = commandContext.getSession(PersistenceProvider.class);
-            persistenceProvider.dbSchemaDrop();
-            persistenceProvider.dbSchemaCreate();
+            PersistenceSession persistenceSession = commandContext.getSession(PersistenceSession.class);
+            persistenceSession.dbSchemaDrop();
+            persistenceSession.dbSchemaCreate();
             SchemaOperationsProcessEngineBuild.dbCreateHistoryLevel(commandContext.getDbEntityManger());
             return null;
           }
@@ -232,7 +232,7 @@ public abstract class TestHelper {
         .execute(new Command<Object>() {
           public Object execute(CommandContext commandContext) {
 
-            commandContext.getSession(PersistenceProvider.class).dbSchemaCreate();
+            commandContext.getSession(PersistenceSession.class).dbSchemaCreate();
             return null;
           }
         });

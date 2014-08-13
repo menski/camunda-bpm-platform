@@ -47,7 +47,7 @@ import org.camunda.bpm.engine.impl.bpmn.parser.BpmnParser;
 import org.camunda.bpm.engine.impl.calendar.*;
 import org.camunda.bpm.engine.impl.cfg.auth.DefaultAuthorizationProvider;
 import org.camunda.bpm.engine.impl.cfg.auth.ResourceAuthorizationProvider;
-import org.camunda.bpm.engine.impl.cfg.standalone.StandaloneMybatisTransactionContextFactory;
+import org.camunda.bpm.engine.impl.cfg.standalone.StandaloneTransactionContextFactory;
 import org.camunda.bpm.engine.impl.cmmn.CaseServiceImpl;
 import org.camunda.bpm.engine.impl.cmmn.deployer.CmmnDeployer;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionManager;
@@ -695,17 +695,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     if (sessionFactories==null) {
       sessionFactories = new HashMap<Class<?>, SessionFactory>();
 
-      dbSqlSessionFactory = new DbSqlSessionFactory();
-      dbSqlSessionFactory.setDatabaseType(databaseType);
-      dbSqlSessionFactory.setIdGenerator(idGenerator);
-      dbSqlSessionFactory.setSqlSessionFactory(sqlSessionFactory);
-      dbSqlSessionFactory.setDbIdentityUsed(isDbIdentityUsed);
-      dbSqlSessionFactory.setDbHistoryUsed(isDbHistoryUsed);
-      dbSqlSessionFactory.setCmmnEnabled(cmmnEnabled);
-      dbSqlSessionFactory.setDatabaseTablePrefix(databaseTablePrefix);
-      dbSqlSessionFactory.setDatabaseSchema(databaseSchema);
-      addSessionFactory(dbSqlSessionFactory);
-      addSessionFactory(new DbSqlPersistenceProviderFactory());
+      initPersistenceProviders();
+
       addSessionFactory(new DbEntityManagerFactory(idGenerator));
 
       addSessionFactory(new GenericManagerFactory(AttachmentManager.class));
@@ -755,6 +746,20 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
         addSessionFactory(sessionFactory);
       }
     }
+  }
+
+  protected void initPersistenceProviders() {
+    dbSqlSessionFactory = new DbSqlSessionFactory();
+    dbSqlSessionFactory.setDatabaseType(databaseType);
+    dbSqlSessionFactory.setIdGenerator(idGenerator);
+    dbSqlSessionFactory.setSqlSessionFactory(sqlSessionFactory);
+    dbSqlSessionFactory.setDbIdentityUsed(isDbIdentityUsed);
+    dbSqlSessionFactory.setDbHistoryUsed(isDbHistoryUsed);
+    dbSqlSessionFactory.setCmmnEnabled(cmmnEnabled);
+    dbSqlSessionFactory.setDatabaseTablePrefix(databaseTablePrefix);
+    dbSqlSessionFactory.setDatabaseSchema(databaseSchema);
+    addSessionFactory(dbSqlSessionFactory);
+    addSessionFactory(new DbSqlPersistenceProviderFactory());
   }
 
   protected void addSessionFactory(SessionFactory sessionFactory) {
@@ -974,7 +979,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   protected void initTransactionContextFactory() {
     if (transactionContextFactory==null) {
-      transactionContextFactory = new StandaloneMybatisTransactionContextFactory();
+      transactionContextFactory = new StandaloneTransactionContextFactory();
     }
   }
 

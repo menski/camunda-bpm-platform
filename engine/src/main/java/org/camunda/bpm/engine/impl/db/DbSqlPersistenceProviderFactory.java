@@ -23,7 +23,7 @@ import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
 public class DbSqlPersistenceProviderFactory implements SessionFactory {
 
   public Class<?> getSessionType() {
-    return PersistenceProvider.class;
+    return PersistenceSession.class;
   }
 
   public Session openSession() {

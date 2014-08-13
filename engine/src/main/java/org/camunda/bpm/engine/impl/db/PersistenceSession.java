@@ -15,13 +15,14 @@ package org.camunda.bpm.engine.impl.db;
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
+import org.camunda.bpm.engine.impl.interceptor.Session;
 
 
 /**
  * @author Daniel Meyer
  *
  */
-public interface PersistenceProvider {
+public interface PersistenceSession extends Session {
 
   // Db Operations /////////////////////////////////
 
@@ -35,7 +36,13 @@ public interface PersistenceProvider {
 
   void lock(String statement);
 
+  void commit();
+
+  void rollback();
+
   // schema operations ////////////////////////////
+
+  void dbSchemaCheckVersion();
 
   void dbSchemaCreate();
 
@@ -44,9 +51,5 @@ public interface PersistenceProvider {
   void dbSchemaPrune();
 
   void dbSchemaUpdate();
-
-  void performSchemaOperationsProcessEngineBuild();
-
-  void performSchemaOperationsProcessEngineClose();
 
 }

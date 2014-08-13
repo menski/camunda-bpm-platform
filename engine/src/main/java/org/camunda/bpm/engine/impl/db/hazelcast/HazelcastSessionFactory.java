@@ -11,31 +11,29 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.impl.db.entitymanager;
+package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import org.camunda.bpm.engine.impl.cfg.IdGenerator;
-import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.db.PersistenceSession;
+import com.hazelcast.core.HazelcastInstance;
+import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
 
 /**
  * @author Sebastian Menski
  */
-public class DbEntityManagerFactory implements SessionFactory {
+public class HazelcastSessionFactory implements SessionFactory {
 
-  protected IdGenerator idGenerator;
+  protected HazelcastInstance hazelcastInstance;
 
-  public DbEntityManagerFactory(IdGenerator idGenerator) {
-    this.idGenerator = idGenerator;
+  public HazelcastSessionFactory(HazelcastInstance hazelcastInstance) {
+    this.hazelcastInstance = hazelcastInstance;
   }
 
   public Class<?> getSessionType() {
-    return DbEntityManager.class;
+    return HazelcastSession.class;
   }
 
-  public DbEntityManager openSession() {
-    PersistenceSession persistenceSession = Context.getCommandContext().getSession(PersistenceSession.class);
-    return new DbEntityManager(idGenerator, persistenceSession);
+  public Session openSession() {
+    return new HazelcastSession(hazelcastInstance);
   }
 
 }

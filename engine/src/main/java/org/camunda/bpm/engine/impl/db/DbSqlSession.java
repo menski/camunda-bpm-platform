@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ibatis.session.SqlSession;
-import org.camunda.bpm.engine.*;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.engine.OptimisticLockingException;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.WrongDbException;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
-import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.util.ClassNameUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
@@ -44,7 +44,7 @@ import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
  * @author Tom Baeyens
  * @author Joram Barrez
  */
-public class DbSqlSession implements Session, PersistenceProvider {
+public class DbSqlSession extends AbstractPersistenceSession {
 
   private static Logger log = Logger.getLogger(DbSqlSession.class.getName());
 
@@ -352,38 +352,6 @@ public class DbSqlSession implements Session, PersistenceProvider {
     return (String) sqlSession.selectOne(selectSchemaVersionStatement);
   }
 
-  public void dbSchemaCreate() {
-    ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
-
-    int configuredHistoryLevel = processEngineConfiguration.getHistoryLevel();
-    if ( (!processEngineConfiguration.isDbHistoryUsed())
-         && (configuredHistoryLevel>ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE)
-       ) {
-      throw new ProcessEngineException("historyLevel config is higher then 'none' and dbHistoryUsed is set to false");
-    }
-
-    if (isEngineTablePresent()) {
-      String dbVersion = getDbVersion();
-      if (!ProcessEngine.VERSION.equals(dbVersion)) {
-        throw new WrongDbException(ProcessEngine.VERSION, dbVersion);
-      }
-    } else {
-      dbSchemaCreateEngine();
-    }
-
-    if (processEngineConfiguration.isDbHistoryUsed()) {
-      dbSchemaCreateHistory();
-    }
-
-    if (processEngineConfiguration.isDbIdentityUsed()) {
-      dbSchemaCreateIdentity();
-    }
-
-    if (processEngineConfiguration.isCmmnEnabled()) {
-      dbSchemaCreateCmmn();
-    }
-  }
-
   protected void dbSchemaCreateIdentity() {
     executeMandatorySchemaResource("create", "identity");
   }
@@ -400,31 +368,20 @@ public class DbSqlSession implements Session, PersistenceProvider {
     executeMandatorySchemaResource("create", "case.engine");
   }
 
-  public void dbSchemaDrop() {
-    if (dbSqlSessionFactory.isCmmnEnabled()) {
-      executeMandatorySchemaResource("drop", "case.engine");
-    }
-
-    executeMandatorySchemaResource("drop", "engine");
-
-    if (dbSqlSessionFactory.isDbHistoryUsed()) {
-      executeMandatorySchemaResource("drop", "history");
-    }
-    if (dbSqlSessionFactory.isDbIdentityUsed()) {
-      executeMandatorySchemaResource("drop", "identity");
-    }
+  protected void dbSchemaDropIdentity() {
+    executeMandatorySchemaResource("drop", "identity");
   }
 
-  public void dbSchemaPrune() {
-    if (isHistoryTablePresent() && !dbSqlSessionFactory.isDbHistoryUsed()) {
-      executeMandatorySchemaResource("drop", "history");
-    }
-    if (isIdentityTablePresent() && dbSqlSessionFactory.isDbIdentityUsed()) {
-      executeMandatorySchemaResource("drop", "identity");
-    }
-    if (isCaseDefinitionTablePresent() && dbSqlSessionFactory.isCmmnEnabled()) {
-      executeMandatorySchemaResource("drop", "case.engine");
-    }
+  protected void dbSchemaDropHistory() {
+    executeMandatorySchemaResource("drop", "history");
+  }
+
+  protected void dbSchemaDropEngine() {
+    executeMandatorySchemaResource("drop", "engine");
+  }
+
+  protected void dbSchemaDropCmmn() {
+    executeMandatorySchemaResource("drop", "case.engine");
   }
 
   public void executeMandatorySchemaResource(String operation, String component) {
@@ -480,26 +437,6 @@ public class DbSqlSession implements Session, PersistenceProvider {
 
   protected String prependDatabaseTablePrefix(String tableName) {
     return dbSqlSessionFactory.getDatabaseTablePrefix() + tableName;
-  }
-
-  public void dbSchemaUpdate() {
-
-    if (!isEngineTablePresent()) {
-      dbSchemaCreateEngine();
-    }
-
-    if (!isHistoryTablePresent() && dbSqlSessionFactory.isDbHistoryUsed()) {
-      dbSchemaCreateHistory();
-    }
-
-    if (!isIdentityTablePresent() && dbSqlSessionFactory.isDbIdentityUsed()) {
-      dbSchemaCreateIdentity();
-    }
-
-    if (!isCaseDefinitionTablePresent() && dbSqlSessionFactory.isCmmnEnabled()) {
-      dbSchemaCreateCmmn();
-    }
-
   }
 
   public String getResourceForDbOperation(String directory, String operation, String component) {
@@ -628,35 +565,6 @@ public class DbSqlSession implements Session, PersistenceProvider {
       }
     }
     return false;
-  }
-
-  public void performSchemaOperationsProcessEngineBuild() {
-    String databaseSchemaUpdate = Context.getProcessEngineConfiguration().getDatabaseSchemaUpdate();
-    if (ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_DROP_CREATE.equals(databaseSchemaUpdate)) {
-      try {
-        dbSchemaDrop();
-      } catch (RuntimeException e) {
-        // ignore
-      }
-    }
-    if ( ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP.equals(databaseSchemaUpdate)
-         || ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_DROP_CREATE.equals(databaseSchemaUpdate)
-         || ProcessEngineConfigurationImpl.DB_SCHEMA_UPDATE_CREATE.equals(databaseSchemaUpdate)
-       ) {
-      dbSchemaCreate();
-    } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE.equals(databaseSchemaUpdate)) {
-      dbSchemaCheckVersion();
-    } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE.equals(databaseSchemaUpdate)) {
-      dbSchemaUpdate();
-    }
-
-  }
-
-  public void performSchemaOperationsProcessEngineClose() {
-    String databaseSchemaUpdate = Context.getProcessEngineConfiguration().getDatabaseSchemaUpdate();
-    if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP.equals(databaseSchemaUpdate)) {
-      dbSchemaDrop();
-    }
   }
 
   // getters and setters //////////////////////////////////////////////////////

@@ -23,7 +23,7 @@ import org.camunda.bpm.engine.impl.cfg.IdGenerator;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
-import org.camunda.bpm.engine.impl.db.PersistenceProvider;
+import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityCache;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState;
@@ -51,11 +51,11 @@ public class DbEntityManager implements Session {
 
   protected DbOperationManager dbOperationManager;
 
-  protected PersistenceProvider persistenceProvider;
+  protected PersistenceSession persistenceSession;
 
-  public DbEntityManager(IdGenerator idGenerator, PersistenceProvider persistenceProvider) {
+  public DbEntityManager(IdGenerator idGenerator, PersistenceSession persistenceSession) {
     this.idGenerator = idGenerator;
-    this.persistenceProvider = persistenceProvider;
+    this.persistenceSession = persistenceSession;
     dbEntityCache = new DbEntityCache();
     dbOperationManager = new DbOperationManager();
   }
@@ -95,12 +95,12 @@ public class DbEntityManager implements Session {
     if(firstResult == -1 ||  maxResults==-1) {
       return Collections.EMPTY_LIST;
     }
-    List loadedObjects = persistenceProvider.selectList(statement, parameter);
+    List loadedObjects = persistenceSession.selectList(statement, parameter);
     return filterLoadedObjects(loadedObjects);
   }
 
   public Object selectOne(String statement, Object parameter) {
-    Object result = persistenceProvider.selectOne(statement, parameter);
+    Object result = persistenceSession.selectOne(statement, parameter);
     if (result instanceof DbEntity) {
       DbEntity loadedObject = (DbEntity) result;
       result = cacheFilter(loadedObject);
@@ -110,7 +110,7 @@ public class DbEntityManager implements Session {
 
   @SuppressWarnings("unchecked")
   public boolean selectBoolean(String statement, Object parameter) {
-    List<String> result = (List<String>) persistenceProvider.selectList(statement, parameter);
+    List<String> result = (List<String>) persistenceSession.selectList(statement, parameter);
     if(result != null) {
       return result.contains(1);
     }
@@ -123,7 +123,7 @@ public class DbEntityManager implements Session {
     if (persistentObject!=null) {
       return persistentObject;
     }
-    persistentObject = persistenceProvider.selectById(entityClass, id);
+    persistentObject = persistenceSession.selectById(entityClass, id);
 
     if (persistentObject==null) {
       return null;
@@ -168,7 +168,7 @@ public class DbEntityManager implements Session {
   }
 
   public void lock(String statement) {
-    persistenceProvider.lock(statement);
+    persistenceSession.lock(statement);
   }
 
   public boolean isDirty(DbEntity dbEntity) {
@@ -191,7 +191,7 @@ public class DbEntityManager implements Session {
 
     // execute the flush
     for (DbOperation dbOperation : operationsToFlush) {
-      persistenceProvider.executeDbOperation(dbOperation);
+      persistenceSession.executeDbOperation(dbOperation);
     }
 
   }
@@ -332,12 +332,12 @@ public class DbEntityManager implements Session {
 
   // getters / setters /////////////////////////////////
 
-  public PersistenceProvider getDbOperationExecutor() {
-    return persistenceProvider;
+  public PersistenceSession getDbOperationExecutor() {
+    return persistenceSession;
   }
 
-  public void setDbOperationExecutor(PersistenceProvider executor) {
-    this.persistenceProvider = executor;
+  public void setDbOperationExecutor(PersistenceSession executor) {
+    this.persistenceSession = executor;
   }
 
   public DbOperationManager getDbOperationManager() {

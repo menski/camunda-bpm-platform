@@ -12,17 +12,20 @@
  */
 package org.camunda.bpm.engine.impl.cfg.hazelcast;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.logging.Logger;
-
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.interceptor.CommandInterceptor;
-import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.logging.Logger;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastPersistenceProviderFactory;
+import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory;
+import org.camunda.bpm.engine.impl.interceptor.CommandContextInterceptor;
+import org.camunda.bpm.engine.impl.interceptor.CommandInterceptor;
+import org.camunda.bpm.engine.impl.interceptor.LogInterceptor;
+import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator;
 
 /**
  * @author Daniel Meyer
@@ -60,7 +63,7 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
 //    initJobExecutor();
 //    initDataSource();
 //    initTransactionFactory();
-    initSqlSessionFactory();
+//    initSqlSessionFactory();
     initIdentityProviderSessionFactory();
     initSessionFactories();
     initSpin();
@@ -97,12 +100,18 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
     }
   }
 
-  protected Collection<? extends CommandInterceptor> getDefaultCommandInterceptorsTxRequired() {
-    return Collections.emptyList();
+  protected Collection< ? extends CommandInterceptor> getDefaultCommandInterceptorsTxRequired() {
+    List<CommandInterceptor> defaultCommandInterceptorsTxRequired = new ArrayList<CommandInterceptor>();
+    defaultCommandInterceptorsTxRequired.add(new LogInterceptor());
+    defaultCommandInterceptorsTxRequired.add(new CommandContextInterceptor(commandContextFactory, this));
+    return defaultCommandInterceptorsTxRequired;
   }
 
-  protected Collection<? extends CommandInterceptor> getDefaultCommandInterceptorsTxRequiresNew() {
-    return Collections.emptyList();
+  protected Collection< ? extends CommandInterceptor> getDefaultCommandInterceptorsTxRequiresNew() {
+    List<CommandInterceptor> defaultCommandInterceptorsTxRequired = new ArrayList<CommandInterceptor>();
+    defaultCommandInterceptorsTxRequired.add(new LogInterceptor());
+    defaultCommandInterceptorsTxRequired.add(new CommandContextInterceptor(commandContextFactory, this, true));
+    return defaultCommandInterceptorsTxRequired;
   }
 
   protected void initIdGenerator() {
@@ -110,6 +119,12 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
       // TODO: use hazelcast IdGenerator ?
       idGenerator = new StrongUuidGenerator();
     }
+  }
+
+  @Override
+  protected void initPersistenceProviders() {
+    addSessionFactory(new HazelcastSessionFactory(hazelcastInstance));
+    addSessionFactory(new HazelcastPersistenceProviderFactory());
   }
 
   public Config getHazelcastConfig() {
