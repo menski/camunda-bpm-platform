@@ -57,7 +57,7 @@ public class JobAcquisitionTest extends PluggableProcessEngineTestCase {
           ResultSet rs = null;
 
           try {
-            SqlSession sqlSession = commandContext.getDbSqlSession().getSqlSession();
+            SqlSession sqlSession = commandContext.getDbEntityManger().getSqlSession();
             connection = sqlSession.getConnection();
             statement = connection
                 .createStatement();

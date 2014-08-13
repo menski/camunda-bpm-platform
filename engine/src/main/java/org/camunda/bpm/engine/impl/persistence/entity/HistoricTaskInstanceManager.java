@@ -142,7 +142,7 @@ public class HistoricTaskInstanceManager extends AbstractHistoricManager {
       final HistoryEventHandler eventHandler = configuration.getHistoryEventHandler();
 
       TaskEntity taskEntity = Context.getCommandContext()
-          .getDbSqlSession()
+          .getDbEntityManger()
           .selectById(TaskEntity.class, taskId);
 
       HistoryEvent evt = eventProducer.createTaskInstanceCompleteEvt(taskEntity, deleteReason);

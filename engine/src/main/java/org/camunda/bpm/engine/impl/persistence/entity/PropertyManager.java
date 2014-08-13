@@ -31,7 +31,7 @@ public class PropertyManager extends AbstractManager {
     // do not perform locking if H2 database is used. H2 uses table level locks
     // by default which may cause deadlocks if the deploy command needs to get a new
     // Id using the DbIdGenerator while performing a deployment.
-    if(!"h2".equals(Context.getCommandContext().getDbSqlSession().getDbSqlSessionFactory().getDatabaseType())) {
+    if(!"h2".equals(Context.getCommandContext().getDbEntityManger().getDbSqlSessionFactory().getDatabaseType())) {
 
       // We lock a special deployment lock property
       getDbSqlSession().lock("lockDeploymentLockProperty");

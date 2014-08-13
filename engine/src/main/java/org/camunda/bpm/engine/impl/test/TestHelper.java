@@ -235,7 +235,7 @@ public abstract class TestHelper {
     processEngineConfiguration.getCommandExecutorTxRequired()
         .execute(new Command<Object>() {
           public Object execute(CommandContext commandContext) {
-            DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+            DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
             dbSqlSession.executeMandatorySchemaResource("create", "engine");
             dbSqlSession.executeMandatorySchemaResource("create", "history");
             dbSqlSession.executeMandatorySchemaResource("create", "identity");
@@ -249,7 +249,7 @@ public abstract class TestHelper {
     processEngineConfiguration.getCommandExecutorTxRequired()
         .execute(new Command<Object>() {
          public Object execute(CommandContext commandContext) {
-           commandContext.getDbSqlSession().dbSchemaDrop();
+           commandContext.getDbEntityManger().dbSchemaDrop();
            return null;
          }
         });
@@ -259,7 +259,7 @@ public abstract class TestHelper {
     processEngineConfiguration.getCommandExecutorTxRequired()
       .execute(new Command<Object>() {
        public Object execute(CommandContext commandContext) {
-         DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+         DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
          PropertyEntity historyLevelProperty = dbSqlSession.selectById(PropertyEntity.class, "historyLevel");
          if (historyLevelProperty != null) {
            if (processEngineConfiguration.getHistoryLevel() != new Integer(historyLevelProperty.getValue())) {
@@ -267,7 +267,7 @@ public abstract class TestHelper {
              dbSqlSession.merge(historyLevelProperty);
            }
          } else {
-           commandContext.getDbSqlSession().dbCreateHistoryLevel();
+           commandContext.getDbEntityManger().dbCreateHistoryLevel();
          }
          return null;
        }
@@ -278,7 +278,7 @@ public abstract class TestHelper {
     processEngineConfiguration.getCommandExecutorTxRequired()
       .execute(new Command<Object>() {
        public Object execute(CommandContext commandContext) {
-         DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+         DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
          PropertyEntity historyLevelProperty = dbSqlSession.selectById(PropertyEntity.class, "historyLevel");
          if (historyLevelProperty != null) {
            dbSqlSession.delete(historyLevelProperty);

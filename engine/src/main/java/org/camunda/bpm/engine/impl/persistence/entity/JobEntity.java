@@ -103,7 +103,7 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
   public void insert() {
     DbSqlSession dbSqlSession = Context
       .getCommandContext()
-      .getDbSqlSession();
+      .getDbEntityManger();
 
     dbSqlSession.insert(this);
 
@@ -124,7 +124,7 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
   public void delete(boolean incidentResolved) {
     DbSqlSession dbSqlSession = Context
         .getCommandContext()
-        .getDbSqlSession();
+        .getDbEntityManger();
 
     dbSqlSession.delete(this);
 
@@ -342,7 +342,7 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
       byteArray = new ByteArrayEntity("job.exceptionByteArray", exceptionBytes);
       Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .insert(byteArray);
       exceptionByteArrayId = byteArray.getId();
       exceptionByteArray = byteArray;
@@ -398,7 +398,7 @@ public abstract class JobEntity implements Serializable, Job, DbEntity, HasDbRev
     if ((exceptionByteArray == null) && (exceptionByteArrayId != null)) {
       exceptionByteArray = Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .selectById(ByteArrayEntity.class, exceptionByteArrayId);
     }
     return exceptionByteArray;

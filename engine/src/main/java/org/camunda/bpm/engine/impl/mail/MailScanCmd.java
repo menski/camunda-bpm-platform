@@ -71,7 +71,7 @@ public class MailScanCmd implements Command<Object> {
       Message[] messages = toDoFolder.getMessages();
       log.fine("getting messages from myToDoFolder");
 
-      DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+      DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
 
       for (Message message: messages) {
         log.fine("transforming mail into activiti task: "+message.getSubject());

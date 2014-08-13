@@ -13,6 +13,8 @@
 
 package org.camunda.bpm.engine.impl.db;
 
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,13 +26,12 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ibatis.session.SqlSession;
+import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
@@ -44,7 +45,6 @@ import org.camunda.bpm.engine.impl.HistoricProcessInstanceQueryImpl;
 import org.camunda.bpm.engine.impl.HistoricTaskInstanceQueryImpl;
 import org.camunda.bpm.engine.impl.HistoricVariableInstanceQueryImpl;
 import org.camunda.bpm.engine.impl.JobQueryImpl;
-import org.camunda.bpm.engine.impl.Page;
 import org.camunda.bpm.engine.impl.ProcessDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.ProcessInstanceQueryImpl;
 import org.camunda.bpm.engine.impl.TaskQueryImpl;
@@ -52,18 +52,15 @@ import org.camunda.bpm.engine.impl.UserQueryImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
-import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
-import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
 import org.camunda.bpm.engine.impl.identity.db.DbGroupQueryImpl;
 import org.camunda.bpm.engine.impl.identity.db.DbUserQueryImpl;
 import org.camunda.bpm.engine.impl.interceptor.Session;
-import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 import org.camunda.bpm.engine.impl.util.ClassNameUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
-import org.camunda.bpm.engine.impl.variable.DeserializedObject;
 
 
 /** responsibilities:
@@ -74,31 +71,21 @@ import org.camunda.bpm.engine.impl.variable.DeserializedObject;
  * @author Tom Baeyens
  * @author Joram Barrez
  */
-public class DbSqlSession implements Session {
+public class DbSqlSession implements Session, PersistenceProvider {
 
   private static Logger log = Logger.getLogger(DbSqlSession.class.getName());
 
   protected SqlSession sqlSession;
   protected DbSqlSessionFactory dbSqlSessionFactory;
 
-//  protected List<DbEntity> insertedObjects = new ArrayList<DbEntity>();
-//  protected List<DbEntity> updatedObjects = new ArrayList<DbEntity>();
-//  protected Map<Class<?>, Map<String, CachedObject>> cachedObjects = new HashMap<Class<?>, Map<String,CachedObject>>();
-//  protected List<BulkUpdateOperation> bulkUpdates = new ArrayList<BulkUpdateOperation>();
-//  protected List<DeleteOperation> deleteOperations = new ArrayList<DeleteOperation>();
-
-  protected List<DeserializedObject> deserializedObjects = new ArrayList<DeserializedObject>();
   protected String connectionMetadataDefaultCatalog = null;
   protected String connectionMetadataDefaultSchema = null;
-
-  protected DbEntityManager entityManager;
 
   public DbSqlSession(DbSqlSessionFactory dbSqlSessionFactory) {
     this.dbSqlSessionFactory = dbSqlSessionFactory;
     this.sqlSession = dbSqlSessionFactory
       .getSqlSessionFactory()
       .openSession();
-    entityManager = new DbEntityManager(dbSqlSessionFactory, sqlSession);
   }
 
   public DbSqlSession(DbSqlSessionFactory dbSqlSessionFactory, Connection connection, String catalog, String schema) {
@@ -108,208 +95,217 @@ public class DbSqlSession implements Session {
       .openSession(connection);
     this.connectionMetadataDefaultCatalog = catalog;
     this.connectionMetadataDefaultSchema = schema;
-    entityManager = new DbEntityManager(dbSqlSessionFactory, sqlSession);
   }
 
-  // insert ///////////////////////////////////////////////////////////////////
+  public void executeDbOperation(DbOperation operation) {
+    switch(operation.getOperationType()) {
 
-  public void insert(DbEntity dbEntity) {
-    entityManager.insert(dbEntity);
-  }
+      case INSERT:
+        insertEntity((DbEntityOperation) operation);
+        break;
 
-  // update ///////////////////////////////////////////////////////////////////
+      case DELETE:
+        deleteEntity((DbEntityOperation) operation);
+        break;
+      case DELETE_BULK:
+        deleteBulk((DbBulkOperation) operation);
+        break;
 
-  public void merge(DbEntity dbEntity) {
-    entityManager.merge(dbEntity);
-  }
+      case UPDATE:
+        updateEntity((DbEntityOperation) operation);
+        break;
+      case UPDATE_BULK:
+        updateBulk((DbBulkOperation) operation);
+        break;
 
-  public void update(Class<? extends DbEntity> entityType, String statement, Object parameter) {
-    entityManager.bulkUpdate(entityType, statement, parameter);
-  }
-
-  // delete ///////////////////////////////////////////////////////////////////
-
-  public void delete(Class<? extends DbEntity> entityType, String statement, Object parameter) {
-    entityManager.bulkDelete(entityType, statement, parameter);
-  }
-
-
-  public void delete(DbEntity dbEntity) {
-    entityManager.delete(dbEntity);
-  }
-
-  // select ///////////////////////////////////////////////////////////////////
-
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement) {
-    return selectList(statement, null, 0, Integer.MAX_VALUE);
-  }
-
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement, Object parameter) {
-    return selectList(statement, parameter, 0, Integer.MAX_VALUE);
-  }
-
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement, Object parameter, Page page) {
-    if(page!=null) {
-      return selectList(statement, parameter, page.getFirstResult(), page.getMaxResults());
-    }else {
-      return selectList(statement, parameter, 0, Integer.MAX_VALUE);
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement, ListQueryParameterObject parameter, Page page) {
-    return selectList(statement, parameter);
-  }
+  // select ////////////////////////////////////////////
 
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement, Object parameter, int firstResult, int maxResults) {
-    return selectList(statement, new ListQueryParameterObject(parameter, firstResult, maxResults));
-  }
-
-  @SuppressWarnings("unchecked")
-  public List selectList(String statement, ListQueryParameterObject parameter) {
-    return selectListWithRawParameter(statement, parameter, parameter.getFirstResult(), parameter.getMaxResults());
-  }
-
-  @SuppressWarnings("unchecked")
-  public List selectListWithRawParameter(String statement, Object parameter, int firstResult, int maxResults) {
+  public List<?> executeSelectList(String statement, Object parameter){
     statement = dbSqlSessionFactory.mapStatement(statement);
-    if(firstResult == -1 ||  maxResults==-1) {
-      return Collections.EMPTY_LIST;
-    }
-    List loadedObjects = sqlSession.selectList(statement, parameter);
-    return filterLoadedObjects(loadedObjects);
+    return sqlSession.selectList(statement, parameter);
   }
 
-  public Object selectOne(String statement, Object parameter) {
-    statement = dbSqlSessionFactory.mapStatement(statement);
-    Object result = sqlSession.selectOne(statement, parameter);
-    if (result instanceof DbEntity) {
-      DbEntity loadedObject = (DbEntity) result;
-      result = cacheFilter(loadedObject);
-    }
-    return result;
-  }
-
-  public boolean selectBoolean(String statement, Object parameter) {
-    statement = dbSqlSessionFactory.mapStatement(statement);
-    List<String> result = sqlSession.selectList(statement, parameter);
-    if(result != null) {
-      return result.contains(1);
-    }
-    return false;
-
-  }
-
-  @SuppressWarnings("unchecked")
-  public <T extends DbEntity> T selectById(Class<T> entityClass, String id) {
-    T persistentObject = findInCache(entityClass, id);
-    if (persistentObject!=null) {
-      return persistentObject;
-    }
-    String selectStatement = dbSqlSessionFactory.getSelectStatement(entityClass);
+  public <T extends DbEntity> T executeSelectById(Class<T> type, String id) {
+    String selectStatement = dbSqlSessionFactory.getSelectStatement(type);
     selectStatement = dbSqlSessionFactory.mapStatement(selectStatement);
-    persistentObject = (T) sqlSession.selectOne(selectStatement, id);
-    if (persistentObject==null) {
-      return null;
-    }
-    entityManager.getDbEntityCache().putPersistent(persistentObject);
-    return persistentObject;
+    ensureNotNull("no select statement for " + type + " in the ibatis mapping files", "selectStatement", selectStatement);
+
+    return (T) sqlSession.selectOne(selectStatement, id);
   }
 
-  // internal session cache ///////////////////////////////////////////////////
-
-  public <T extends DbEntity> List<T> findInCache(Class<T> entityClass) {
-    return entityManager.getDbEntityCache().getEntitiesByType(entityClass);
+  public Object executeSelectOne(String statement, Object parameter) {
+    statement = dbSqlSessionFactory.mapStatement(statement);
+    return sqlSession.selectOne(statement, parameter);
   }
 
-  public <T extends DbEntity> T findInCache(Class<T> entityClass, String id) {
-    return entityManager.getDbEntityCache().get(entityClass, id);
+  // lock ////////////////////////////////////////////
+
+  public void executeLock(String statement) {
+    String mappedStatement = dbSqlSessionFactory.mapStatement(statement);
+    sqlSession.update(mappedStatement);
   }
 
-  protected List filterLoadedObjects(List<Object> loadedObjects) {
-    if (loadedObjects.isEmpty()) {
-      return loadedObjects;
-    }
-    if (! (DbEntity.class.isAssignableFrom(loadedObjects.get(0).getClass()))) {
-      return loadedObjects;
-    }
-    List<DbEntity> filteredObjects = new ArrayList<DbEntity>(loadedObjects.size());
-    for (Object loadedObject: loadedObjects) {
-      DbEntity cachedPersistentObject = cacheFilter((DbEntity) loadedObject);
-      filteredObjects.add(cachedPersistentObject);
-    }
-    return filteredObjects;
+  // insert //////////////////////////////////////////
+
+  protected void insertEntity(DbEntityOperation operation) {
+
+    final DbEntity dbEntity = operation.getEntity();
+
+    // get statement
+    String insertStatement = dbSqlSessionFactory.getInsertStatement(dbEntity);
+    insertStatement = dbSqlSessionFactory.mapStatement(insertStatement);
+    ensureNotNull("no insert statement for " + dbEntity.getClass() + " in the ibatis mapping files", "insertStatement", insertStatement);
+
+    // execute the insert
+    executeInsertEntity(insertStatement, dbEntity);
+
+    // perform post insert actions on entity
+    entityInserted(dbEntity);
   }
 
-  /** returns the object in the cache.  if this object was loaded before,
-   * then the original object is returned.  if this is the first time
-   * this object is loaded, then the loadedObject is added to the cache. */
-  protected DbEntity cacheFilter(DbEntity persistentObject) {
-    DbEntity cachedPersistentObject = findInCache(persistentObject.getClass(), persistentObject.getId());
-    if (cachedPersistentObject!=null) {
-      return cachedPersistentObject;
+  protected void executeInsertEntity(String insertStatement, Object parameter) {
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("inserting: " + toString(parameter));
     }
-    entityManager.getDbEntityCache().putPersistent(persistentObject);
-    return persistentObject;
+    sqlSession.insert(insertStatement, parameter);
+
+    // increment revision of our copy
+    if (parameter instanceof HasDbRevision) {
+      HasDbRevision versionedObject = (HasDbRevision) parameter;
+      versionedObject.setRevision(versionedObject.getRevisionNext());
+    }
   }
 
-  // deserialized objects /////////////////////////////////////////////////////
+  protected void entityInserted(final DbEntity entity) {
+    // nothing to do
+  }
 
-  public void addDeserializedObject(Object deserializedObject, byte[] serializedBytes, VariableInstanceEntity variableInstanceEntity) {
-    deserializedObjects.add(new DeserializedObject(deserializedObject, serializedBytes, variableInstanceEntity));
+  // delete ///////////////////////////////////////////
+
+  protected void deleteEntity(DbEntityOperation operation) {
+
+    final DbEntity dbEntity = operation.getEntity();
+
+    // get statement
+    String deleteStatement = dbSqlSessionFactory.getDeleteStatement(dbEntity.getClass());
+    ensureNotNull("no delete statement for " + dbEntity.getClass() + " in the ibatis mapping files", "deleteStatement", deleteStatement);
+
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("deleting: " + toString(dbEntity));
+    }
+
+    // execute the delete
+    executeDelete(deleteStatement, dbEntity);
+
+    // perform post delete action
+    entityDeleted(dbEntity);
+  }
+
+  protected void executeDelete(String deleteStatement, Object parameter) {
+
+    // map the statement
+    deleteStatement = dbSqlSessionFactory.mapStatement(deleteStatement);
+
+    // It only makes sense to check for optimistic locking exceptions for objects that actually have a revision
+    if (parameter instanceof HasDbRevision) {
+      int nrOfRowsDeleted = sqlSession.delete(deleteStatement, parameter);
+      if (nrOfRowsDeleted == 0) {
+        // enforce optimistic locking
+        throw new OptimisticLockingException(toString(parameter) + " was updated by another transaction concurrently");
+      }
+    } else {
+      sqlSession.delete(deleteStatement, parameter);
+    }
+  }
+
+  protected void entityDeleted(final DbEntity entity) {
+    // nothing to do
+  }
+
+  protected void deleteBulk(DbBulkOperation operation) {
+    String statement = operation.getStatement();
+    Object parameter = operation.getParameter();
+
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("deleting (bulk): " + statement + " " + parameter);
+    }
+
+    executeDelete(statement, parameter);
+  }
+
+  // update ////////////////////////////////////////
+
+  protected void updateEntity(DbEntityOperation operation) {
+
+    final DbEntity dbEntity = operation.getEntity();
+
+    String updateStatement = dbSqlSessionFactory.getUpdateStatement(dbEntity);
+    ensureNotNull("no update statement for " + dbEntity.getClass() + " in the ibatis mapping files", "updateStatement", updateStatement);
+
+    if (log.isLoggable(Level.FINE)) {
+      log.fine("updating: " + toString(dbEntity) + "]");
+    }
+
+    // execute update
+    executeUpdate(updateStatement, dbEntity);
+
+    // perform post update action
+    entityUpdated(dbEntity);
+  }
+
+  protected void executeUpdate(String updateStatement, Object parameter) {
+
+    updateStatement = dbSqlSessionFactory.mapStatement(updateStatement);
+
+    int updatedRecords = sqlSession.update(updateStatement, parameter);
+
+    if (parameter instanceof HasDbRevision) {
+      if (updatedRecords != 1) {
+        // enforce optimistic locking
+        throw new OptimisticLockingException(toString(parameter) + " was updated by another transaction concurrently");
+      } else {
+        // increment revision of our copy
+        HasDbRevision versionedObject = (HasDbRevision) parameter;
+        versionedObject.setRevision(versionedObject.getRevisionNext());
+      }
+    }
+  }
+
+  protected void entityUpdated(final DbEntity entity) {
+    // nothing to do
+  }
+
+  protected void updateBulk(DbBulkOperation operation) {
+    String statement = operation.getStatement();
+    Object parameter = operation.getParameter();
+
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("updating (bulk): " + statement + " " + parameter);
+    }
+
+    executeUpdate(statement, parameter);
+  }
+
+  // utils /////////////////////////////////////////
+
+  protected String toString(Object object) {
+    if(object == null) {
+      return "null";
+    }
+    if(object instanceof DbEntity) {
+      DbEntity dbEntity = (DbEntity) object;
+      return ClassNameUtil.getClassNameWithoutPackage(dbEntity)+"["+dbEntity.getId()+"]";
+    }
+    return object.toString();
   }
 
   // flush ////////////////////////////////////////////////////////////////////
 
   public void flush() {
-    flushDeserializedObjects();
-    entityManager.flush();
-  }
-
-  protected void flushDeserializedObjects() {
-    for (DeserializedObject deserializedObject: deserializedObjects) {
-      deserializedObject.flush();
-    }
-  }
-
-  public boolean hasStateChanged(DbEntity dbEntity) {
-    CachedDbEntity cachedEntity = entityManager.getDbEntityCache().getCachedEntity(dbEntity);
-    if(cachedEntity == null) {
-      return false;
-    } else {
-      return cachedEntity.isDirty() || cachedEntity.getEntityState() == DbEntityState.MERGED;
-    }
-  }
-
-//  public <T extends PersistentObject> List<T> pruneDeletedEntities(List<T> listToPrune) {
-//    ArrayList<T> prunedList = new ArrayList<T>(listToPrune);
-//    for (T potentiallyDeleted : listToPrune) {
-//      for (DeleteOperation deleteOperation: deleteOperations) {
-//        if (deleteOperation instanceof DeleteById) {
-//          DeleteById deleteById = (DeleteById) deleteOperation;
-//          if ( potentiallyDeleted.getClass().equals(deleteById.persistenceObjectClass)
-//               && potentiallyDeleted.getId().equals(deleteById.persistentObjectId)
-//             ) {
-//            prunedList.remove(potentiallyDeleted);
-//          }
-//        }
-//      }
-//    }
-//    return prunedList;
-//  }
-
-  public <T extends DbEntity> List<T> pruneDeletedEntities(List<T> listToPrune) {
-    ArrayList<T> prunedList = new ArrayList<T>();
-    for (T potentiallyDeleted : listToPrune) {
-      if(!entityManager.isDeleted(potentiallyDeleted)) {
-        prunedList.add(potentiallyDeleted);
-      }
-    }
-    return prunedList;
+    // nothing to do
   }
 
   public void close() {
@@ -324,20 +320,7 @@ public class DbSqlSession implements Session {
     sqlSession.rollback();
   }
 
-  protected String toString(DbEntity dbEntity) {
-    if (dbEntity==null) {
-      return "null";
-    }
-    return ClassNameUtil.getClassNameWithoutPackage(dbEntity)+"["+dbEntity.getId()+"]";
-  }
-
-  public void lock(String statement) {
-    String mappedStatement = dbSqlSessionFactory.mapStatement(statement);
-    sqlSession.update(mappedStatement);
-  }
-
   // schema operations ////////////////////////////////////////////////////////
-
 
   public void dbSchemaCheckVersion() {
     try {
@@ -377,35 +360,6 @@ public class DbSqlSession implements Session {
     }
 
     log.fine("activiti db schema check successful");
-  }
-
-  public void dbCreateHistoryLevel() {
-    ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
-    int configuredHistoryLevel = processEngineConfiguration.getHistoryLevel();
-    PropertyEntity property = new PropertyEntity("historyLevel", Integer.toString(configuredHistoryLevel));
-    insert(property);
-    log.info("Creating historyLevel property in database with value: " + processEngineConfiguration.getHistory());
-  }
-
-  public void checkHistoryLevel() {
-    Integer configuredHistoryLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
-    PropertyEntity historyLevelProperty = selectById(PropertyEntity.class, "historyLevel");
-    if (historyLevelProperty == null) {
-      log.info("No historyLevel property found in database.");
-      dbCreateHistoryLevel();
-    } else {
-      Integer databaseHistoryLevel = new Integer(historyLevelProperty.getValue());
-      if (!configuredHistoryLevel.equals(databaseHistoryLevel)) {
-        throw new ProcessEngineException("historyLevel mismatch: configuration says " + configuredHistoryLevel + " and database says " + databaseHistoryLevel);
-      }
-    }
-  }
-
-  public void checkDeploymentLockExists() {
-    PropertyEntity deploymentLockProperty = selectById(PropertyEntity.class, "deployment.lock");
-    if (deploymentLockProperty == null) {
-      log.warning("No deployment lock property found in database.");
-    }
   }
 
   protected String addMissingComponent(String missingComponents, String component) {
@@ -500,66 +454,6 @@ public class DbSqlSession implements Session {
   }
 
   public static String[] JDBC_METADATA_TABLE_TYPES = {"TABLE"};
-
-  public String dbSchemaUpdate() {
-    String feedback = null;
-    String dbVersion = null;
-    boolean isUpgradeNeeded = false;
-
-    if (isEngineTablePresent()) {
-      // the next piece assumes both DB version and library versions are formatted 5.x
-      PropertyEntity dbVersionProperty = selectById(PropertyEntity.class, "schema.version");
-      dbVersion = dbVersionProperty.getValue();
-      isUpgradeNeeded = !ProcessEngine.VERSION.equals(dbVersion);
-
-      if (isUpgradeNeeded) {
-        dbVersionProperty.setValue(ProcessEngine.VERSION);
-
-        PropertyEntity dbHistoryProperty;
-        if ("5.0".equals(dbVersion)) {
-          dbHistoryProperty = new PropertyEntity("schema.history", "create(5.0)");
-          insert(dbHistoryProperty);
-        } else {
-          dbHistoryProperty = selectById(PropertyEntity.class, "schema.history");
-        }
-
-        String dbHistoryValue = dbHistoryProperty.getValue()+" upgrade("+dbVersion+"->"+ProcessEngine.VERSION+")";
-        dbHistoryProperty.setValue(dbHistoryValue);
-
-        dbSchemaUpgrade("engine", dbVersion);
-
-        feedback = "upgraded Activiti from "+dbVersion+" to "+ProcessEngine.VERSION;
-      }
-    } else {
-      dbSchemaCreateEngine();
-    }
-
-    if (isHistoryTablePresent()) {
-      if (isUpgradeNeeded) {
-        dbSchemaUpgrade("history", dbVersion);
-      }
-    } else if (dbSqlSessionFactory.isDbHistoryUsed()) {
-      dbSchemaCreateHistory();
-    }
-
-    if (isIdentityTablePresent()) {
-      if (isUpgradeNeeded) {
-        dbSchemaUpgrade("identity", dbVersion);
-      }
-    } else if (dbSqlSessionFactory.isDbIdentityUsed()) {
-      dbSchemaCreateIdentity();
-    }
-
-    if (isCaseDefinitionTablePresent()) {
-      if (isUpgradeNeeded) {
-        dbSchemaUpgrade("case.engine", dbVersion);
-      }
-    } else if (dbSqlSessionFactory.isCmmnEnabled()) {
-      dbSchemaCreateCmmn();
-    }
-
-    return feedback;
-  }
 
   public boolean isEngineTablePresent(){
     return isTablePresent("ACT_RU_EXECUTION");
@@ -775,11 +669,9 @@ public class DbSqlSession implements Session {
     } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE.equals(databaseSchemaUpdate)) {
       dbSchemaCheckVersion();
     } else if (ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE.equals(databaseSchemaUpdate)) {
-      dbSchemaUpdate();
+      throw new UnsupportedOperationException("DbSchema Update is not supported.");
     }
 
-    checkHistoryLevel();
-    checkDeploymentLockExists();
   }
 
   public void performSchemaOperationsProcessEngineClose() {

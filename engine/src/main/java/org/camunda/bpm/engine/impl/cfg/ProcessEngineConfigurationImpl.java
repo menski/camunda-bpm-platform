@@ -202,6 +202,7 @@ import org.camunda.bpm.engine.impl.variable.BooleanType;
 import org.camunda.bpm.engine.impl.variable.ByteArrayType;
 import org.camunda.bpm.engine.impl.variable.DateType;
 import org.camunda.bpm.engine.impl.variable.DefaultVariableTypes;
+import org.camunda.bpm.engine.impl.variable.DeserializedObjectsSessionFactory;
 import org.camunda.bpm.engine.impl.variable.DoubleType;
 import org.camunda.bpm.engine.impl.variable.EntityManagerSession;
 import org.camunda.bpm.engine.impl.variable.EntityManagerSessionFactory;
@@ -854,6 +855,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
       addSessionFactory(new GenericManagerFactory(CaseDefinitionManager.class));
       addSessionFactory(new GenericManagerFactory(CaseExecutionManager.class));
+
+      addSessionFactory(new DeserializedObjectsSessionFactory());
 
       sessionFactories.put(ReadOnlyIdentityProvider.class, identityProviderSessionFactory);
 

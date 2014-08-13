@@ -69,7 +69,7 @@ public class CreateAttachmentCmd implements Command<Attachment> {
     attachment.setProcessInstanceId(processInstanceId);
     attachment.setUrl(url);
 
-    DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+    DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
     dbSqlSession.insert(attachment);
 
     if (content != null) {

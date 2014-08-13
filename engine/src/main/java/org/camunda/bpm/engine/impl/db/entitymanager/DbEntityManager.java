@@ -15,24 +15,26 @@ package org.camunda.bpm.engine.impl.db.entitymanager;
 import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.*;
 import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.*;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.apache.ibatis.session.SqlSession;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.impl.Page;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.DbSqlSessionFactory;
+import org.camunda.bpm.engine.impl.db.PersistenceProvider;
+import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityCache;
+import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationManager;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.executor.DbOperationExecutor;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.executor.SqlDbOperationExecutor;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 
 /**
@@ -40,6 +42,7 @@ import org.camunda.bpm.engine.impl.interceptor.Session;
  * @author Daniel Meyer
  *
  */
+@SuppressWarnings({ "rawtypes" })
 public class DbEntityManager implements Session {
 
   protected Logger log = Logger.getLogger(DbEntityManager.class.getName());
@@ -50,17 +53,129 @@ public class DbEntityManager implements Session {
 
   protected DbOperationManager dbOperationManager;
 
-  protected DbOperationExecutor dbOperationExecutor;
+  protected PersistenceProvider persistenceProvider;
 
-  public DbEntityManager(DbSqlSessionFactory dbSqlSessionFactory, SqlSession sqlSession) {
-    initialize(dbSqlSessionFactory, sqlSession);
-  }
-
-  protected void initialize(DbSqlSessionFactory dbSqlSessionFactory, SqlSession sqlSession) {
-    idGenerator = dbSqlSessionFactory.getIdGenerator();
+  public DbEntityManager(IdGenerator idGenerator, PersistenceProvider persistenceProvider) {
+    this.idGenerator = idGenerator;
+    this.persistenceProvider = persistenceProvider;
     dbEntityCache = new DbEntityCache();
     dbOperationManager = new DbOperationManager();
-    dbOperationExecutor = new SqlDbOperationExecutor(sqlSession, dbSqlSessionFactory);
+  }
+
+  // selects /////////////////////////////////////////////////
+
+  public List selectList(String statement) {
+    return selectList(statement, null, 0, Integer.MAX_VALUE);
+  }
+
+  public List selectList(String statement, Object parameter) {
+    return selectList(statement, parameter, 0, Integer.MAX_VALUE);
+  }
+
+  public List selectList(String statement, Object parameter, Page page) {
+    if(page!=null) {
+      return selectList(statement, parameter, page.getFirstResult(), page.getMaxResults());
+    }else {
+      return selectList(statement, parameter, 0, Integer.MAX_VALUE);
+    }
+  }
+
+  public List selectList(String statement, ListQueryParameterObject parameter, Page page) {
+    return selectList(statement, parameter);
+  }
+
+  public List selectList(String statement, Object parameter, int firstResult, int maxResults) {
+    return selectList(statement, new ListQueryParameterObject(parameter, firstResult, maxResults));
+  }
+
+  public List selectList(String statement, ListQueryParameterObject parameter) {
+    return selectListWithRawParameter(statement, parameter, parameter.getFirstResult(), parameter.getMaxResults());
+  }
+
+  @SuppressWarnings("unchecked")
+  public List selectListWithRawParameter(String statement, Object parameter, int firstResult, int maxResults) {
+    if(firstResult == -1 ||  maxResults==-1) {
+      return Collections.EMPTY_LIST;
+    }
+    List loadedObjects = persistenceProvider.executeSelectList(statement, parameter);
+    return filterLoadedObjects(loadedObjects);
+  }
+
+  public Object selectOne(String statement, Object parameter) {
+    Object result = persistenceProvider.executeSelectOne(statement, parameter);
+    if (result instanceof DbEntity) {
+      DbEntity loadedObject = (DbEntity) result;
+      result = cacheFilter(loadedObject);
+    }
+    return result;
+  }
+
+  @SuppressWarnings("unchecked")
+  public boolean selectBoolean(String statement, Object parameter) {
+    List<String> result = (List<String>) persistenceProvider.executeSelectList(statement, parameter);
+    if(result != null) {
+      return result.contains(1);
+    }
+    return false;
+
+  }
+
+  public <T extends DbEntity> T selectById(Class<T> entityClass, String id) {
+    T persistentObject = dbEntityCache.get(entityClass, id);
+    if (persistentObject!=null) {
+      return persistentObject;
+    }
+    persistentObject = persistenceProvider.executeSelectById(entityClass, id);
+
+    if (persistentObject==null) {
+      return null;
+    }
+    dbEntityCache.putPersistent(persistentObject);
+    return persistentObject;
+  }
+
+  public <T extends DbEntity> List<T> getCachedEntitiesByType(Class<T> type) {
+    return dbEntityCache.getEntitiesByType(type);
+  }
+
+  protected List filterLoadedObjects(List<Object> loadedObjects) {
+    if (loadedObjects.isEmpty()) {
+      return loadedObjects;
+    }
+    if (! (DbEntity.class.isAssignableFrom(loadedObjects.get(0).getClass()))) {
+      return loadedObjects;
+    }
+    List<DbEntity> filteredObjects = new ArrayList<DbEntity>(loadedObjects.size());
+    for (Object loadedObject: loadedObjects) {
+      DbEntity cachedPersistentObject = cacheFilter((DbEntity) loadedObject);
+      filteredObjects.add(cachedPersistentObject);
+    }
+    return filteredObjects;
+  }
+
+  /** returns the object in the cache.  if this object was loaded before,
+   * then the original object is returned.  if this is the first time
+   * this object is loaded, then the loadedObject is added to the cache. */
+  protected DbEntity cacheFilter(DbEntity persistentObject) {
+    DbEntity cachedPersistentObject = dbEntityCache.get(persistentObject.getClass(), persistentObject.getId());
+    if (cachedPersistentObject!=null) {
+      return cachedPersistentObject;
+    }
+    dbEntityCache.putPersistent(persistentObject);
+    return persistentObject;
+  }
+
+  public void lock(String statement) {
+    persistenceProvider.executeLock(statement);
+  }
+
+  public boolean isDirty(DbEntity dbEntity) {
+    CachedDbEntity cachedEntity = dbEntityCache.getCachedEntity(dbEntity);
+    if(cachedEntity == null) {
+      return false;
+    } else {
+      return cachedEntity.isDirty() || cachedEntity.getEntityState() == DbEntityState.MERGED;
+    }
   }
 
   public void flush() {
@@ -74,7 +189,7 @@ public class DbEntityManager implements Session {
 
     // execute the flush
     for (DbOperation dbOperation : operationsToFlush) {
-      dbOperationExecutor.execute(dbOperation);
+      persistenceProvider.executeDbOperation(dbOperation);
     }
 
   }
@@ -203,15 +318,24 @@ public class DbEntityManager implements Session {
     }
   }
 
+  public <T extends DbEntity> List<T> pruneDeletedEntities(List<T> listToPrune) {
+    ArrayList<T> prunedList = new ArrayList<T>();
+    for (T potentiallyDeleted : listToPrune) {
+      if(!isDeleted(potentiallyDeleted)) {
+        prunedList.add(potentiallyDeleted);
+      }
+    }
+    return prunedList;
+  }
 
   // getters / setters /////////////////////////////////
 
-  public DbOperationExecutor getDbOperationExecutor() {
-    return dbOperationExecutor;
+  public PersistenceProvider getDbOperationExecutor() {
+    return persistenceProvider;
   }
 
-  public void setDbOperationExecutor(DbOperationExecutor executor) {
-    this.dbOperationExecutor = executor;
+  public void setDbOperationExecutor(PersistenceProvider executor) {
+    this.persistenceProvider = executor;
   }
 
   public DbOperationManager getDbOperationManager() {

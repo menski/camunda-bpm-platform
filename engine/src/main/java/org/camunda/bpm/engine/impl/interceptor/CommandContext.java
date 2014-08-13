@@ -37,7 +37,7 @@ import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseExecutionManager;
 import org.camunda.bpm.engine.impl.cmmn.operation.CmmnAtomicOperation;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.context.ProcessApplicationContextUtil;
-import org.camunda.bpm.engine.impl.db.DbSqlSession;
+import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.identity.Authentication;
 import org.camunda.bpm.engine.impl.identity.ReadOnlyIdentityProvider;
 import org.camunda.bpm.engine.impl.identity.WritableIdentityProvider;
@@ -84,6 +84,7 @@ public class CommandContext {
   protected TransactionContext transactionContext;
   protected Map<Class< ? >, SessionFactory> sessionFactories;
   protected Map<Class< ? >, Session> sessions = new HashMap<Class< ? >, Session>();
+  protected List<Session> sessionList = new ArrayList<Session>();
   protected ProcessEngineConfigurationImpl processEngineConfiguration;
   protected FailedJobCommandFactory failedJobCommandFactory;
 
@@ -235,15 +236,13 @@ public class CommandContext {
   }
 
   protected void flushSessions() {
-    List<Session> sessions = new ArrayList<Session>(this.sessions.values());
-    for (Session session : sessions) {
+    for (Session session : sessionList) {
       session.flush();
     }
   }
 
   protected void closeSessions(CommandInvocationContext commandInvocationContext) {
-    List<Session> sessions = new ArrayList<Session>(this.sessions.values());
-    for (Session session : sessions) {
+    for (Session session : sessionList) {
       try {
         session.close();
       } catch (Throwable exception) {
@@ -260,13 +259,14 @@ public class CommandContext {
       ensureNotNull("no session factory configured for " + sessionClass.getName(), "sessionFactory", sessionFactory);
       session = sessionFactory.openSession();
       sessions.put(sessionClass, session);
+      sessionList.add(0, session);
     }
 
     return (T) session;
   }
 
-  public DbSqlSession getDbSqlSession() {
-    return getSession(DbSqlSession.class);
+  public DbEntityManager getDbEntityManger() {
+    return getSession(DbEntityManager.class);
   }
 
   public DeploymentManager getDeploymentManager() {

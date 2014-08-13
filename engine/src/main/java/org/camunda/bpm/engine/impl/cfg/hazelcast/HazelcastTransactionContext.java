@@ -10,20 +10,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.impl.db.entitymanager.operation;
+package org.camunda.bpm.engine.impl.cfg.hazelcast;
+
+import org.camunda.bpm.engine.impl.cfg.TransactionContext;
+import org.camunda.bpm.engine.impl.cfg.TransactionListener;
+import org.camunda.bpm.engine.impl.cfg.TransactionState;
 
 /**
  * @author Daniel Meyer
  *
  */
-public enum DbOperationType {
+public class HazelcastTransactionContext implements TransactionContext {
 
-  INSERT,
+  public void commit() {
 
-  UPDATE,
-  UPDATE_BULK,
+  }
 
-  DELETE,
-  DELETE_BULK;
+  public void rollback() {
+
+  }
+
+  public void addTransactionListener(TransactionState transactionState, TransactionListener transactionListener) {
+
+  }
 
 }

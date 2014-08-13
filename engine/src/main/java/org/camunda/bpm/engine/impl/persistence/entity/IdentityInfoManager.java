@@ -70,7 +70,7 @@ public class IdentityInfoManager extends AbstractManager {
   protected List<IdentityInfoEntity> findIdentityInfoDetails(String identityInfoId) {
     return Context
       .getCommandContext()
-      .getDbSqlSession()
+      .getDbEntityManger()
       .getSqlSession()
       .selectList("selectIdentityInfoDetails", identityInfoId);
   }

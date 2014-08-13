@@ -10,20 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.impl.db.entitymanager.operation;
+package org.camunda.bpm.engine.hazelcast;
 
 /**
  * @author Daniel Meyer
  *
  */
-public enum DbOperationType {
+public class TestHazelcastProcessEngineSetup extends AbstractHazelcastProcessEngineTestCase {
 
-  INSERT,
+  public void testProcessEngineSetup() {
 
-  UPDATE,
-  UPDATE_BULK,
-
-  DELETE,
-  DELETE_BULK;
+  }
 
 }

@@ -94,7 +94,7 @@ public class CacheAwareHistoryEventProducer extends DefaultHistoryEventProducer 
   /** find a cached entity by primary key */
   protected <T extends HistoryEvent> T findInCache(Class<T> type, String id) {
     return Context.getCommandContext()
-      .getDbSqlSession()
+      .getDbEntityManger()
       .findInCache(type, id);
   }
 

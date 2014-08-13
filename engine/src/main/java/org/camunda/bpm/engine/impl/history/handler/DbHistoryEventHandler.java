@@ -90,7 +90,7 @@ public class DbHistoryEventHandler implements HistoryEventHandler {
         ByteArrayEntity byteArrayEntity = new ByteArrayEntity(historyEvent.getVariableName(), byteValue);
         Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .insert(byteArrayEntity);
         historyEvent.setByteArrayId(byteArrayEntity.getId());
 
@@ -135,7 +135,7 @@ public class DbHistoryEventHandler implements HistoryEventHandler {
   }
 
   protected DbSqlSession getDbSqlSession() {
-    return Context.getCommandContext().getDbSqlSession();
+    return Context.getCommandContext().getDbEntityManger();
   }
 
 }

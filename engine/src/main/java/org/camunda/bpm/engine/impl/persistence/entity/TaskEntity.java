@@ -159,7 +159,7 @@ public class TaskEntity extends CoreVariableScope implements Task, DelegateTask,
     ensureParentTaskActive();
 
     CommandContext commandContext = Context.getCommandContext();
-    DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+    DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
     dbSqlSession.insert(this);
 
     if(execution != null) {
@@ -171,7 +171,7 @@ public class TaskEntity extends CoreVariableScope implements Task, DelegateTask,
     setAssignee(this.getAssignee());
 
     CommandContext commandContext = Context.getCommandContext();
-    DbSqlSession dbSqlSession = commandContext.getDbSqlSession();
+    DbSqlSession dbSqlSession = commandContext.getDbEntityManger();
     dbSqlSession.merge(this);
 
     commandContext.registerCommandContextCloseListener(this);
@@ -511,7 +511,7 @@ public class TaskEntity extends CoreVariableScope implements Task, DelegateTask,
     for (IdentityLinkEntity identityLink: identityLinks) {
       Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .delete(identityLink);
     }
   }
@@ -978,7 +978,7 @@ public class TaskEntity extends CoreVariableScope implements Task, DelegateTask,
   }
 
   public void onCommandContextClose(CommandContext commandContext) {
-    if(commandContext.getDbSqlSession().hasStateChanged(this)) {
+    if(commandContext.getDbEntityManger().isDirty(this)) {
       commandContext.getHistoricTaskInstanceManager().updateHistoricTaskInstance(this);
     }
   }

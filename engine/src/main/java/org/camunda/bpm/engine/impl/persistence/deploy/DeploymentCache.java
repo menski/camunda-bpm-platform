@@ -65,7 +65,7 @@ public class DeploymentCache {
   public ProcessDefinitionEntity findDeployedProcessDefinitionById(String processDefinitionId) {
     ensureNotNull("Invalid process definition id", "processDefinitionId", processDefinitionId);
     CommandContext commandContext = Context.getCommandContext();
-    ProcessDefinitionEntity processDefinition = commandContext.getDbSqlSession().findInCache(ProcessDefinitionEntity.class, processDefinitionId);
+    ProcessDefinitionEntity processDefinition = commandContext.getDbEntityManger().findInCache(ProcessDefinitionEntity.class, processDefinitionId);
     if (processDefinition == null) {
       processDefinition = commandContext
         .getProcessDefinitionManager()
@@ -172,7 +172,7 @@ public class DeploymentCache {
 
     // try to load case definition from cache
     CaseDefinitionEntity caseDefinition = commandContext
-      .getDbSqlSession()
+      .getDbEntityManger()
       .findInCache(CaseDefinitionEntity.class, caseDefinitionId);
 
     if (caseDefinition == null) {

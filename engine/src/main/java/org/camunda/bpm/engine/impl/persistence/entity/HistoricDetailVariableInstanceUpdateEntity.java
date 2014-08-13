@@ -57,7 +57,7 @@ public class HistoricDetailVariableInstanceUpdateEntity extends HistoricVariable
 
     DbSqlSession dbSqlSession = Context
         .getCommandContext()
-        .getDbSqlSession();
+        .getDbEntityManger();
 
     dbSqlSession.delete(this);
 
@@ -97,7 +97,7 @@ public class HistoricDetailVariableInstanceUpdateEntity extends HistoricVariable
       if(Context.getCommandContext() != null) {
         byteArrayValue = Context
           .getCommandContext()
-          .getDbSqlSession()
+          .getDbEntityManger()
           .selectById(ByteArrayEntity.class, byteArrayId);
       }
     }
@@ -117,7 +117,7 @@ public class HistoricDetailVariableInstanceUpdateEntity extends HistoricVariable
       byteArrayValue = new ByteArrayEntity(bytes);
       Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .insert(byteArrayValue);
     }
     this.byteArrayValue = byteArrayValue;

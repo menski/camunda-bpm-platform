@@ -71,7 +71,7 @@ public class VariableInstanceEntity implements CoreVariableInstance, VariableIns
 
     Context
       .getCommandContext()
-      .getDbSqlSession()
+      .getDbEntityManger()
       .insert(variableInstance);
 
     return variableInstance;
@@ -96,7 +96,7 @@ public class VariableInstanceEntity implements CoreVariableInstance, VariableIns
     // delete variable
     Context
       .getCommandContext()
-      .getDbSqlSession()
+      .getDbEntityManger()
       .delete(this);
 
     deleteByteArrayValue();
@@ -174,7 +174,7 @@ public class VariableInstanceEntity implements CoreVariableInstance, VariableIns
       if(Context.getCommandContext() != null) {
         byteArrayValue = Context
           .getCommandContext()
-          .getDbSqlSession()
+          .getDbEntityManger()
           .selectById(ByteArrayEntity.class, byteArrayValueId);
       }
     }
@@ -194,7 +194,7 @@ public class VariableInstanceEntity implements CoreVariableInstance, VariableIns
       byteArrayValue = new ByteArrayEntity(bytes);
       Context
         .getCommandContext()
-        .getDbSqlSession()
+        .getDbEntityManger()
         .insert(byteArrayValue);
     }
     this.byteArrayValue = byteArrayValue;
