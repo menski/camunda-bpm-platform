@@ -161,7 +161,15 @@
       <artifactId>jsonassert</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.hazelcast</groupId>
+      <artifactId>hazelcast-all</artifactId>
+      <version>3.3-EA2</version>
+    </dependency>
+
   </dependencies>
+
 
   <properties>
       <history.level>full</history.level>
