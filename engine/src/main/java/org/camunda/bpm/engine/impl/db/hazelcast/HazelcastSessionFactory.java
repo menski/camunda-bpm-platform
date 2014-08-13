@@ -14,13 +14,35 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
+import java.util.HashMap;
+import java.util.Map;
+import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
+import org.camunda.bpm.engine.impl.persistence.entity.*;
+import org.camunda.bpm.engine.impl.util.EnsureUtil;
 
 /**
  * @author Sebastian Menski
  */
 public class HazelcastSessionFactory implements SessionFactory {
+
+  public final static String ENGINE_DEPLOYMENT_MAP_NAME = "cam.engine.deployment";
+  public final static String ENGINE_BYTE_ARRAY_MAP_NAME = "cam.engine.byte_array";
+  public final static String ENGINE_PROCESS_DEFINITION_MAP_NAME = "cam.engine.process_definition";
+  public final static String ENGINE_PROPERTY_MAP_NAME = "cam.engine.property";
+  public final static String ENGINE_EXECUTION_MAP_NAME = "cam.engine.execution";
+
+  public final static Map<Class<? extends DbEntity>, String> entityMapping;
+
+  static {
+    entityMapping = new HashMap<Class<? extends DbEntity>, String>();
+    entityMapping.put(DeploymentEntity.class, ENGINE_DEPLOYMENT_MAP_NAME);
+    entityMapping.put(ResourceEntity.class, ENGINE_BYTE_ARRAY_MAP_NAME);
+    entityMapping.put(ProcessDefinitionEntity.class, ENGINE_PROCESS_DEFINITION_MAP_NAME);
+    entityMapping.put(PropertyEntity.class, ENGINE_PROPERTY_MAP_NAME);
+    entityMapping.put(ExecutionEntity.class, ENGINE_EXECUTION_MAP_NAME);
+  }
 
   protected HazelcastInstance hazelcastInstance;
 
@@ -34,6 +56,12 @@ public class HazelcastSessionFactory implements SessionFactory {
 
   public Session openSession() {
     return new HazelcastSession(hazelcastInstance);
+  }
+
+  public static String getMapNameForEntityType(Class<? extends DbEntity> type) {
+    String mapName = entityMapping.get(type);
+    EnsureUtil.ensureNotNull("Entity type " + type + "currently not supported", "mapName", mapName);
+    return mapName;
   }
 
 }

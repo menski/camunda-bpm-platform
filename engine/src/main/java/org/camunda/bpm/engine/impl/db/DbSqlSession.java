@@ -28,7 +28,6 @@ import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.WrongDbException;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
 import org.camunda.bpm.engine.impl.util.ClassNameUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
@@ -68,30 +67,6 @@ public class DbSqlSession extends AbstractPersistenceSession {
       .openSession(connection);
     this.connectionMetadataDefaultCatalog = catalog;
     this.connectionMetadataDefaultSchema = schema;
-  }
-
-  public void executeDbOperation(DbOperation operation) {
-    switch(operation.getOperationType()) {
-
-      case INSERT:
-        insertEntity((DbEntityOperation) operation);
-        break;
-
-      case DELETE:
-        deleteEntity((DbEntityOperation) operation);
-        break;
-      case DELETE_BULK:
-        deleteBulk((DbBulkOperation) operation);
-        break;
-
-      case UPDATE:
-        updateEntity((DbEntityOperation) operation);
-        break;
-      case UPDATE_BULK:
-        updateBulk((DbBulkOperation) operation);
-        break;
-
-    }
   }
 
   // select ////////////////////////////////////////////

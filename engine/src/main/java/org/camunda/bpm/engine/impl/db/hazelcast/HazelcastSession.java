@@ -14,10 +14,14 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import java.util.List;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
+
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
 
 /**
  * @author Sebastian Menski
@@ -30,29 +34,61 @@ public class HazelcastSession extends AbstractPersistenceSession {
     this.hazelcastInstance = hazelcastInstance;
   }
 
-  protected String getDbVersion() {
+  protected IMap<Object, Object> getMap(String mapName) {
+    return hazelcastInstance.getMap(mapName);
+  }
+
+  protected IMap<Object, Object> getMap(DbEntityOperation operation) {
+    return getMap(operation.getEntityType());
+  }
+
+  protected IMap<Object, Object> getMap(Class<? extends DbEntity> type) {
+    return getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
+  }
+
+
+  protected void insertEntity(DbEntityOperation operation) {
+    DbEntity entity = operation.getEntity();
+    getMap(operation).put(entity.getId(), entity);
+  }
+
+  protected void deleteEntity(DbEntityOperation operation) {
+    getMap(operation).delete(operation.getEntity().getId());
+  }
+
+  protected void deleteBulk(DbBulkOperation operation) {
     // TODO: implement
-    return null;
+
+  }
+
+  protected void updateEntity(DbEntityOperation operation) {
+    DbEntity entity = operation.getEntity();
+    getMap(operation).put(entity.getId(), entity);
+  }
+
+  protected void updateBulk(DbBulkOperation operation) {
+    // TODO: implement
+
+  }
+
+  protected String getDbVersion() {
+    return "fox";
   }
 
   protected void dbSchemaCreateIdentity() {
-    // TODO: implement
-
+    // nothing to do
   }
 
   protected void dbSchemaCreateHistory() {
-    // TODO: implement
-
+    // nothing to do
   }
 
   protected void dbSchemaCreateEngine() {
-    // TODO: implement
-
+    // nothing to do
   }
 
   protected void dbSchemaCreateCmmn() {
-    // TODO: implement
-
+    // nothing to do
   }
 
   protected void dbSchemaDropIdentity() {
@@ -66,38 +102,31 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void dbSchemaDropEngine() {
-    // TODO: implement
-
+    getMap(ENGINE_DEPLOYMENT_MAP_NAME).clear();
+    getMap(ENGINE_BYTE_ARRAY_MAP_NAME).clear();
+    getMap(ENGINE_EXECUTION_MAP_NAME).clear();
+    getMap(ENGINE_PROCESS_DEFINITION_MAP_NAME).clear();
+    getMap(ENGINE_PROPERTY_MAP_NAME).clear();
   }
 
   protected void dbSchemaDropCmmn() {
     // TODO: implement
-
   }
 
   public boolean isEngineTablePresent() {
-    // TODO: implement
-    return false;
+    return true;
   }
 
   public boolean isHistoryTablePresent() {
-    // TODO: implement
-    return false;
+    return true;
   }
 
   public boolean isIdentityTablePresent() {
-    // TODO: implement
-    return false;
+    return true;
   }
 
   public boolean isCaseDefinitionTablePresent() {
-    // TODO: implement
-    return false;
-  }
-
-  public void executeDbOperation(DbOperation operation) {
-    // TODO: implement
-
+    return true;
   }
 
   public List<?> selectList(String statement, Object parameter) {
@@ -105,9 +134,9 @@ public class HazelcastSession extends AbstractPersistenceSession {
     return null;
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends DbEntity> T selectById(Class<T> type, String id) {
-    // TODO: implement
-    return null;
+    return (T) getMap(type).get(id);
   }
 
   public Object selectOne(String statement, Object parameter) {

@@ -18,11 +18,48 @@ import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.WrongDbException;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
 
 /**
  * @author Sebastian Menski
  */
 public abstract class AbstractPersistenceSession implements PersistenceSession {
+
+  public void executeDbOperation(DbOperation operation) {
+    switch(operation.getOperationType()) {
+
+      case INSERT:
+        insertEntity((DbEntityOperation) operation);
+        break;
+
+      case DELETE:
+        deleteEntity((DbEntityOperation) operation);
+        break;
+      case DELETE_BULK:
+        deleteBulk((DbBulkOperation) operation);
+        break;
+
+      case UPDATE:
+        updateEntity((DbEntityOperation) operation);
+        break;
+      case UPDATE_BULK:
+        updateBulk((DbBulkOperation) operation);
+        break;
+
+    }
+  }
+
+  protected abstract void insertEntity(DbEntityOperation operation);
+
+  protected abstract void deleteEntity(DbEntityOperation operation);
+
+  protected abstract void deleteBulk(DbBulkOperation operation);
+
+  protected abstract void updateEntity(DbEntityOperation operation);
+
+  protected abstract void updateBulk(DbBulkOperation operation);
 
   protected abstract String getDbVersion();
 
