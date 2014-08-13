@@ -23,15 +23,13 @@ import com.hazelcast.query.SqlPredicate;
  */
 public class DeleteEntitiesByDeploymentIdHandler extends AbstractDeleteStatementHandler {
 
-  protected Class<? extends DbEntity> type;
-
   public DeleteEntitiesByDeploymentIdHandler(Class<? extends DbEntity> type) {
-    this.type = type;
+    super(type);
   }
 
   public void execute(HazelcastSession session, Object parameter) {
     SqlPredicate predicate = SqlPredicateFactory.createDeploymentIdPredicate(parameter);
-    deleteByPredicate(session, type, predicate);
+    deleteByPredicate(session, predicate);
   }
 
 }

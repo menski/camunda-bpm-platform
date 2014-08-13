@@ -24,9 +24,13 @@ import com.hazelcast.query.SqlPredicate;
  * @author Daniel Meyer
  *
  */
-public abstract class AbstractDeleteStatementHandler implements DeleteStatementHandler {
+public abstract class AbstractDeleteStatementHandler extends TypeAwareStatementHandler implements DeleteStatementHandler {
 
-  protected void deleteByPredicate(HazelcastSession session, Class<? extends DbEntity> type, SqlPredicate predicate) {
+  public AbstractDeleteStatementHandler(Class<? extends DbEntity> type) {
+    super(type);
+  }
+
+  protected void deleteByPredicate(HazelcastSession session, SqlPredicate predicate) {
     IMap<String,? extends DbEntity> map = session.getMap(type);
     Set<String> keys = map.keySet(predicate);
 

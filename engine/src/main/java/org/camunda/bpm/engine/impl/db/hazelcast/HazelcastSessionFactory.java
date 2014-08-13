@@ -13,25 +13,17 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
+import com.hazelcast.core.HazelcastInstance;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntitiesByDeploymentIdHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByIdHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
-import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
-import org.camunda.bpm.engine.impl.util.EnsureUtil;
+import org.camunda.bpm.engine.impl.persistence.entity.*;
 
-import com.hazelcast.core.HazelcastInstance;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 /**
  * @author Sebastian Menski
@@ -61,6 +53,8 @@ public class HazelcastSessionFactory implements SessionFactory {
   }
 
   public static Map<String, DeleteStatementHandler> deleteStatementHandler;
+  public static Map<String, SelectEntityStatementHandler> selectEntityStatementHandler;
+  public static Map<String, SelectEntitiesStatementHandler> selectEntitiesStatementHandler;
 
   static {
     deleteStatementHandler = new HashMap<String, DeleteStatementHandler>();
@@ -68,7 +62,30 @@ public class HazelcastSessionFactory implements SessionFactory {
     deleteStatementHandler.put("deleteCaseDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(CaseDefinitionEntity.class));
     deleteStatementHandler.put("deleteProcessDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(ProcessDefinitionEntity.class));
     deleteStatementHandler.put("deleteDeployment", new DeleteEntityByIdHandler(DeploymentEntity.class));
+
+    selectEntityStatementHandler = new HashMap<String, SelectEntityStatementHandler>();
+    selectEntityStatementHandler.put("selectExecution", new SelectEntityByIdHandler(ExecutionEntity.class));
+    selectEntityStatementHandler.put("selectTask", new SelectEntityByIdHandler(TaskEntity.class));
+    selectEntityStatementHandler.put("selectDeployment", new SelectEntityByIdHandler(DeploymentEntity.class));
+    selectEntityStatementHandler.put("selectVariableInstance", new SelectEntityByIdHandler(VariableInstanceEntity.class));
+    selectEntityStatementHandler.put("selectProcessDefinitionById", new SelectEntityByIdHandler(ProcessDefinitionEntity.class));
+    selectEntityStatementHandler.put("selectLatestProcessDefinitionByKey", new SelectLatestProcessDefinitionHandler());
+    selectEntityStatementHandler.put("selectJob", new SelectEntityByIdHandler(JobEntity.class));
+
+    selectEntitiesStatementHandler = new HashMap<String, SelectEntitiesStatementHandler>();
+    selectEntitiesStatementHandler.put("selectExecutionsByParentExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "parentExecutionId"));
+    selectEntitiesStatementHandler.put("selectExecutionsByProcessInstanceId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "processInstanceId"));
+    selectEntitiesStatementHandler.put("selectSubProcessInstanceBySuperCaseExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, "superExecutionId"));
+    selectEntitiesStatementHandler.put("selectTasksByParentTaskId", new SelectEntitiesByKeyHandler(TaskEntity.class, "parentTaskId"));
+    selectEntitiesStatementHandler.put("selectTasksByExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "executionId"));
+    selectEntitiesStatementHandler.put("selectTaskByCaseExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "caseExecutionId"));
+    selectEntitiesStatementHandler.put("selectTasksByProcessInstanceId", new SelectEntitiesByKeyHandler(TaskEntity.class, "processInstanceId"));
+    selectEntitiesStatementHandler.put("selectVariablesByExecutionId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "executionId"));
+    selectEntitiesStatementHandler.put("selectVariablesByCaseExecutionId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "caseExecutionId"));
+    selectEntitiesStatementHandler.put("selectVariablesByTaskId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "taskId"));
+    selectEntitiesStatementHandler.put("selectJobsByExecutionId", new SelectEntitiesByKeyHandler(JobEntity.class, "executionId"));
   }
+
 
   protected HazelcastInstance hazelcastInstance;
 
@@ -86,13 +103,25 @@ public class HazelcastSessionFactory implements SessionFactory {
 
   public static String getMapNameForEntityType(Class<? extends DbEntity> type) {
     String mapName = entityMapping.get(type);
-    EnsureUtil.ensureNotNull("Entity type '" + type + "' currently not supported", "mapName", mapName);
+    ensureNotNull("Entity type '" + type + "' currently not supported", "mapName", mapName);
     return mapName;
   }
 
   public static DeleteStatementHandler getDeleteStatementHandler(String statement) {
     DeleteStatementHandler statementHandler = deleteStatementHandler.get(statement);
-    EnsureUtil.ensureNotNull("Delete statement '"+statement+"'currently not supported", "statementHandler", statementHandler);
+    ensureNotNull("Delete statement '" + statement + "'currently not supported", "statementHandler", statementHandler);
+    return statementHandler;
+  }
+
+  public static SelectEntityStatementHandler getSelectEntityStatementHandler(String statement) {
+    SelectEntityStatementHandler statementHandler = selectEntityStatementHandler.get(statement);
+    ensureNotNull("Select entity statement '" + statement + "' is currently not supported", "statementHandler", statementHandler);
+    return statementHandler;
+  }
+
+  public static SelectEntitiesStatementHandler getSelectEntitiesStatementHandler(String statement) {
+    SelectEntitiesStatementHandler statementHandler = selectEntitiesStatementHandler.get(statement);
+    ensureNotNull("Select entities statement '" + statement + "' is currently not supported", "statementHandler", statementHandler);
     return statementHandler;
   }
 

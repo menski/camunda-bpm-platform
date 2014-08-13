@@ -15,8 +15,10 @@ package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.SqlPredicate;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.camunda.bpm.engine.OptimisticLockingException;
@@ -26,7 +28,8 @@ import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
-import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
 
 import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
 import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
@@ -185,7 +188,9 @@ public class HazelcastSession extends AbstractPersistenceSession {
     if(log.isLoggable(Level.FINE)) {
       log.fine("executing selectList "+statement);
     }
-    return Collections.emptyList();
+
+    SelectEntitiesStatementHandler statementHandler = HazelcastSessionFactory.getSelectEntitiesStatementHandler(statement);
+    return statementHandler.execute(this, parameter);
   }
 
   @SuppressWarnings("unchecked")
@@ -198,23 +203,8 @@ public class HazelcastSession extends AbstractPersistenceSession {
       log.fine("executing selectOne "+statement);
     }
 
-    if("selectLatestProcessDefinitionByKey".equals(statement)) {
-      IMap<String, ProcessDefinitionEntity> map = getMap(ProcessDefinitionEntity.class);
-      Collection<ProcessDefinitionEntity> processDefintions = map.values(new SqlPredicate("key = '"+parameter+"'"));
-      ProcessDefinitionEntity latestVersion = null;
-      for (ProcessDefinitionEntity processDefinitionEntity : processDefintions) {
-        if(latestVersion == null) {
-          latestVersion = processDefinitionEntity;
-        } else {
-          if(latestVersion.getVersion() < processDefinitionEntity.getVersion()) {
-            latestVersion = processDefinitionEntity;
-          }
-        }
-      }
-      return latestVersion;
-    }
-
-    return null;
+    SelectEntityStatementHandler statementHandler = HazelcastSessionFactory.getSelectEntityStatementHandler(statement);
+    return statementHandler.execute(this, parameter);
   }
 
   public void lock(String statement) {

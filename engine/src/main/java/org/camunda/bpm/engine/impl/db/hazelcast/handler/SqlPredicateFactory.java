@@ -20,16 +20,24 @@ import com.hazelcast.query.SqlPredicate;
  */
 public class SqlPredicateFactory {
 
-  public static SqlPredicate createDeploymentIdPredicate(Object deploymentId) {
-    return createSqlPredicate("deploymentId = '%s'", deploymentId);
-  }
-
   public static SqlPredicate createSqlPredicate(String predicate) {
     return new SqlPredicate(predicate);
   }
 
   public static SqlPredicate createSqlPredicate(String predicate, Object... args) {
     return createSqlPredicate(String.format(predicate, args));
+  }
+
+  public static SqlPredicate createEqualPredicate(String key, Object value) {
+    return createSqlPredicate(String.format("%s = '%%s'", key), value);
+  }
+
+  public static SqlPredicate createDeploymentIdPredicate(Object deploymentId) {
+    return createEqualPredicate("deploymentId", deploymentId);
+  }
+
+  public static SqlPredicate createParentExecutionIdPredicate(Object parentExecutionId) {
+    return createEqualPredicate("parentExecutionId", parentExecutionId);
   }
 
 }
