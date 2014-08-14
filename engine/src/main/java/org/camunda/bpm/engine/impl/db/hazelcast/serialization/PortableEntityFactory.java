@@ -39,6 +39,9 @@ public class PortableEntityFactory implements PortableFactory {
     if(PortableProcessDefinitionEntity.ID == classId) {
       return new PortableProcessDefinitionEntity();
     }
+    if(PortableTaskEntity.ID == classId) {
+      return new PortableTaskEntity();
+    }
     return null;
   }
 

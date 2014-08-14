@@ -13,21 +13,46 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import com.hazelcast.core.HazelcastInstance;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntitiesByDeploymentIdHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByIdHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByKeyHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesByKeyHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityByIdHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEventSubscriptionsByConfiguration;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectExecutionsByQueryCriteriaStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectJobByConfigurationHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionByDeploymentAndKeyHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceByQueryCriteriaStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceIdsByKeyHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectTasksByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
-import org.camunda.bpm.engine.impl.persistence.entity.*;
+import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.IdentityLinkEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+import com.hazelcast.core.HazelcastInstance;
 
 /**
  * @author Sebastian Menski
@@ -43,6 +68,7 @@ public class HazelcastSessionFactory implements SessionFactory {
   public final static String ENGINE_JOB_DEFINITION_MAP_NAME = "cam.engine.job_definition";
   public final static String ENGINE_EVENT_SUBSCRIPTION_MAP_NAME = "cam.engine.event_subscription";
   public final static String ENGINE_IDENTITY_LINK_MAP_NAME = "cam.engine.identity_link";
+  public final static String ENGINE_TASK_MAP_NAME = "cam.engine.task";
 
   public final static String ENGINE_CASE_DEFINITION_MAP_NAME = "cam.engine.case_definition";
 
@@ -60,6 +86,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     entityMapping.put(JobDefinitionEntity.class, ENGINE_JOB_DEFINITION_MAP_NAME);
     entityMapping.put(EventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
     entityMapping.put(IdentityLinkEntity.class, ENGINE_IDENTITY_LINK_MAP_NAME);
+    entityMapping.put(TaskEntity.class, ENGINE_TASK_MAP_NAME);
 
     entityMapping.put(CaseDefinitionEntity.class, ENGINE_CASE_DEFINITION_MAP_NAME);
   }
@@ -97,6 +124,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectTasksByExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "executionId"));
     selectEntitiesStatementHandler.put("selectTaskByCaseExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "caseExecutionId"));
     selectEntitiesStatementHandler.put("selectTasksByProcessInstanceId", new SelectEntitiesByKeyHandler(TaskEntity.class, "processInstanceId"));
+    selectEntitiesStatementHandler.put("selectTaskByQueryCriteria", new SelectTasksByQueryCriteriaStatementHandler());
     selectEntitiesStatementHandler.put("selectVariablesByExecutionId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "executionId"));
     selectEntitiesStatementHandler.put("selectVariablesByCaseExecutionId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "caseExecutionId"));
     selectEntitiesStatementHandler.put("selectVariablesByTaskId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "taskId"));
@@ -106,6 +134,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectCaseDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(CaseDefinitionEntity.class, "deploymentId"));
     selectEntitiesStatementHandler.put("selectProcessInstanceIdsByProcessDefinitionId", new SelectProcessInstanceIdsByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_DEFINITION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectEventSubscriptionsByConfiguration", new SelectEventSubscriptionsByConfiguration());
+    selectEntitiesStatementHandler.put("selectIdentityLinksByTask", new SelectEntitiesByKeyHandler(IdentityLinkEntity.class, "taskId"));
+
   }
 
 

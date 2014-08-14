@@ -13,7 +13,6 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.serialization;
 
 import java.io.IOException;
-import java.util.Date;
 
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 
@@ -51,12 +50,12 @@ public class PortableDeploymentEntity extends AbstractPortableEntity<DeploymentE
 
   protected void readEntityFields(PortableReader reader) throws IOException {
     wrappedEntity.setName(reader.readUTF(NAME_FIELD));
-    wrappedEntity.setDeploymentTime(new Date(reader.readLong(DEPLOYMENT_TIME_FIELD)));
+    wrappedEntity.setDeploymentTime(readDate(reader, DEPLOYMENT_TIME_FIELD));
   }
 
   protected void writeEntityFields(PortableWriter writer) throws IOException {
     writer.writeUTF(NAME_FIELD, wrappedEntity.getName());
-    writer.writeLong(DEPLOYMENT_TIME_FIELD, wrappedEntity.getDeploymentTime().getTime());
+    writeDate(writer, DEPLOYMENT_TIME_FIELD, wrappedEntity.getDeploymentTime());
   }
 
 }
