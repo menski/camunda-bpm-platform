@@ -42,6 +42,13 @@ public class PortableEntityFactory implements PortableFactory {
     if(PortableTaskEntity.ID == classId) {
       return new PortableTaskEntity();
     }
+    if(PortableVariableInstanceEntity.ID == classId) {
+      return new PortableVariableInstanceEntity();
+    }
+    if(PortableByteArrayEntity.ID == classId) {
+      return new PortableByteArrayEntity();
+    }
+
     return null;
   }
 

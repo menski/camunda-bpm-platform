@@ -16,12 +16,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
 
@@ -44,6 +46,8 @@ public class PortableSerialization {
     entityMapping.put(ResourceEntity.class, PortableResourceEntity.class);
     entityMapping.put(ProcessDefinitionEntity.class, PortableProcessDefinitionEntity.class);
     entityMapping.put(TaskEntity.class, PortableTaskEntity.class);
+    entityMapping.put(VariableInstanceEntity.class, PortableVariableInstanceEntity.class);
+    entityMapping.put(ByteArrayEntity.class, PortableByteArrayEntity.class);
   }
 
   public static <T extends AbstractPortableEntity<?>> T createPortableInstance(DbEntity entity) {
@@ -63,6 +67,9 @@ public class PortableSerialization {
     serializationConfig.addClassDefinition(PortableDeploymentEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableResourceEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableProcessDefinitionEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableTaskEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableVariableInstanceEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableByteArrayEntity.getClassDefinition());
 
     serializationConfig.addPortableFactory(PortableEntityFactory.ID, new PortableEntityFactory());
 

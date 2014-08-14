@@ -69,6 +69,28 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
     return new Date(value);
   }
 
+  protected Long readLong(PortableReader reader, String fieldName) throws IOException {
+    long value = reader.readLong(fieldName);
+
+    // HACK
+    if (value == Long.MIN_VALUE) {
+      return null;
+    }
+
+    return value;
+  }
+
+  protected Double readDouble(PortableReader reader, String fieldName) throws IOException {
+    double value = reader.readDouble(fieldName);
+
+    // HACK
+    if (value == Double.MIN_VALUE) {
+      return null;
+    }
+
+    return value;
+  }
+
   public void writePortable(PortableWriter writer) throws IOException {
     writer.writeUTF(ID_FIELD, wrappedEntity.getId());
     if (wrappedEntity instanceof HasDbRevision) {
@@ -88,6 +110,28 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
     }
 
     writer.writeLong(fieldName, value);
+  }
+
+  protected void writeLong(PortableWriter writer, String fieldName, Long longValue) throws IOException {
+    // HACK
+    long value = Long.MIN_VALUE;
+
+    if (longValue != null) {
+      value = longValue;
+    }
+
+    writer.writeLong(fieldName, value);
+  }
+
+  protected void writeDouble(PortableWriter writer, String fieldName, Double doubleValue) throws IOException {
+    // HACK
+    double value = Double.MIN_VALUE;
+
+    if (doubleValue != null) {
+      value = doubleValue;
+    }
+
+    writer.writeDouble(fieldName, value);
   }
 
 }
