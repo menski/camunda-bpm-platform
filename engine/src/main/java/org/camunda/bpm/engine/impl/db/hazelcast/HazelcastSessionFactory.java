@@ -14,14 +14,13 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
 import org.camunda.bpm.engine.impl.persistence.entity.*;
@@ -91,6 +90,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectVariablesByTaskId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "taskId"));
     selectEntitiesStatementHandler.put("selectJobsByExecutionId", new SelectEntitiesByKeyHandler(JobEntity.class, "executionId"));
     selectEntitiesStatementHandler.put("selectJobsByConfiguration", new SelectJobByConfigurationHandler());
+    selectEntitiesStatementHandler.put("selectProcessDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, PortableProcessDefinitionEntity.DEPLOYMENT_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectCaseDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(CaseDefinitionEntity.class, "deploymentId"));
   }
 
 

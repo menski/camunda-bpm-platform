@@ -113,4 +113,8 @@ public class ProcessDefinitionManager extends AbstractManager {
   }
 
 
+  @SuppressWarnings("unchecked")
+  public List<ProcessDefinition> findProcessDefinitionsByDeploymentId(String deploymentId) {
+    return getDbEntityManager().selectList("selectProcessDefinitionByDeploymentId", deploymentId);
+  }
 }

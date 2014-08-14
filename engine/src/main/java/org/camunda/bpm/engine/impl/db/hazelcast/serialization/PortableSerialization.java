@@ -62,6 +62,8 @@ public class PortableSerialization {
     serializationConfig.addClassDefinition(PortableResourceEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableProcessDefinitionEntity.getClassDefinition());
 
+    serializationConfig.addPortableFactory(PortableEntityFactory.ID, new PortableEntityFactory());
+
     return serializationConfig;
   }
 

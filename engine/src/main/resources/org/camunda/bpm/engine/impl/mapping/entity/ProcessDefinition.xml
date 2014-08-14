@@ -74,6 +74,10 @@
     select * from ${prefix}ACT_RE_PROCDEF where ID_ = #{processDefinitionId}
   </select>
 
+  <select id="selectProcessDefinitionByDeploymentId" parameterType="string" resultMap="processDefinitionResultMap">
+    select * from ${prefix}ACT_RE_PROCDEF where DEPLOYMENT_ID_ = #{deploymentId}
+  </select>
+
   <select id="selectProcessDefinitionsByQueryCriteria" parameterType="org.camunda.bpm.engine.impl.ProcessDefinitionQueryImpl" resultMap="processDefinitionResultMap">
   	${limitBefore}
     select RES.* ${limitBetween}

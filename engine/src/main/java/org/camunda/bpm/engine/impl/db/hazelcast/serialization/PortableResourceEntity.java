@@ -31,8 +31,8 @@ public class PortableResourceEntity extends AbstractPortableEntity<ResourceEntit
 
   public static final String NAME_FIELD = "name";
   public static final String BYTES_FIELD = "bytes";
-  public static final String DEPLOYMENT_ID_FIELD = "deploymemtId";
-  public static final String GENERATED_FIELD = null;
+  public static final String DEPLOYMENT_ID_FIELD = "deploymentId";
+  public static final String GENERATED_FIELD = "generated";
 
   public int getClassId() {
     return ID;
@@ -60,15 +60,9 @@ public class PortableResourceEntity extends AbstractPortableEntity<ResourceEntit
   }
 
   protected void writeEntityFields(PortableWriter writer) throws IOException {
-    if(wrappedEntity.getName() != null) {
-      writer.writeUTF(NAME_FIELD, wrappedEntity.getName());
-    }
-    if(wrappedEntity.getBytes() != null) {
-      writer.writeByteArray(BYTES_FIELD, wrappedEntity.getBytes());
-    }
-    if(wrappedEntity.getDeploymentId() != null) {
-      writer.writeUTF(DEPLOYMENT_ID_FIELD, wrappedEntity.getDeploymentId());
-    }
+    writer.writeUTF(NAME_FIELD, wrappedEntity.getName());
+    writer.writeByteArray(BYTES_FIELD, wrappedEntity.getBytes());
+    writer.writeUTF(DEPLOYMENT_ID_FIELD, wrappedEntity.getDeploymentId());
     writer.writeBoolean(GENERATED_FIELD, wrappedEntity.isGenerated());
   }
 

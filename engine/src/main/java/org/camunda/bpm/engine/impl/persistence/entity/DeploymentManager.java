@@ -52,10 +52,7 @@ public class DeploymentManager extends AbstractManager {
   }
 
   public void deleteDeployment(String deploymentId, boolean cascade, boolean skipCustomListeners) {
-    List<ProcessDefinition> processDefinitions = getDbEntityManager()
-            .createProcessDefinitionQuery()
-            .deploymentId(deploymentId)
-            .list();
+    List<ProcessDefinition> processDefinitions = getProcessDefinitionManager().findProcessDefinitionsByDeploymentId(deploymentId);
 
     if (cascade) {
 
@@ -137,10 +134,7 @@ public class DeploymentManager extends AbstractManager {
   }
 
   protected void deleteCaseDeployment(String deploymentId, boolean cascade) {
-    List<CaseDefinition> caseDefinitions = getDbEntityManager()
-        .createCaseDefinitionQuery()
-        .deploymentId(deploymentId)
-        .list();
+    List<CaseDefinition> caseDefinitions = getCaseDefinitionManager().findCaseDefinitionByDeploymentId(deploymentId);
 
     if (cascade) {
 

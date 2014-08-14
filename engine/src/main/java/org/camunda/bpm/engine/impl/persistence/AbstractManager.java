@@ -121,4 +121,5 @@ public abstract class AbstractManager implements Session {
 
   public void flush() {
   }
+
 }

@@ -76,32 +76,15 @@ public class PortableProcessDefinitionEntity extends AbstractPortableEntity<Proc
   }
 
   protected void writeEntityFields(PortableWriter writer) throws IOException {
-    if(wrappedEntity.getCategory() != null) {
-      writer.writeUTF(CATEGORY_FIELD, wrappedEntity.getCategory());
-    }
-    if(wrappedEntity.getName() != null) {
-      writer.writeUTF(NAME_FIELD, wrappedEntity.getName());
-    }
-    if(wrappedEntity.getKey() != null) {
-      writer.writeUTF(KEY_FIELD, wrappedEntity.getKey());
-    }
-
-    writer.writeUTF(VERSION_FIELD, wrappedEntity.getKey());
-
-    if(wrappedEntity.getDeploymentId() != null) {
-      writer.writeUTF(DEPLOYMENT_ID_FIELD, wrappedEntity.getDeploymentId());
-    }
-    if(wrappedEntity.getResourceName() != null) {
-      writer.writeUTF(RESOURCE_NAME_FIELD, wrappedEntity.getResourceName());
-    }
-    if(wrappedEntity.getDiagramResourceName() != null) {
-      writer.writeUTF(DIAGRAM_RESOURCE_NAME_FIELD, wrappedEntity.getDiagramResourceName());
-    }
-
+    writer.writeUTF(CATEGORY_FIELD, wrappedEntity.getCategory());
+    writer.writeUTF(NAME_FIELD, wrappedEntity.getName());
+    writer.writeUTF(KEY_FIELD, wrappedEntity.getKey());
+    writer.writeInt(VERSION_FIELD, wrappedEntity.getVersion());
+    writer.writeUTF(DEPLOYMENT_ID_FIELD, wrappedEntity.getDeploymentId());
+    writer.writeUTF(RESOURCE_NAME_FIELD, wrappedEntity.getResourceName());
+    writer.writeUTF(DIAGRAM_RESOURCE_NAME_FIELD, wrappedEntity.getDiagramResourceName());
     writer.writeBoolean(HAS_START_FORM_KEY_FIELD, wrappedEntity.getHasStartFormKey());
-
     writer.writeInt(SUSPENSION_STATE_FIELD, wrappedEntity.getSuspensionState());
-
   }
 
 }

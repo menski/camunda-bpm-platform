@@ -65,4 +65,8 @@ public class CaseDefinitionManager extends AbstractManager {
     return (Long) getDbEntityManager().selectOne("selectCaseDefinitionCountByQueryCriteria", caseDefinitionQuery);
   }
 
+  @SuppressWarnings("unchecked")
+  public List<CaseDefinition> findCaseDefinitionByDeploymentId(String deploymentId) {
+    return getDbEntityManager().selectList("selectCaseDefinitionByDeploymentId", deploymentId);
+  }
 }
