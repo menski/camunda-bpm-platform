@@ -12,21 +12,13 @@
  */
 package org.camunda.bpm.engine.impl.cfg.hazelcast;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.MulticastConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.config.TcpIpConfig;
+import com.hazelcast.config.*;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
-
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.standalone.StandaloneTransactionContextFactory;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastPersistenceProviderFactory;
@@ -98,23 +90,22 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
     if(hazelcastInstance == null) {
       if(hazelcastConfig == null) {
         LOG.info("No Hazelcast configuration provided: using default configuration.");
-        hazelcastConfig = new Config();
 
-        MulticastConfig multicastConfig = new MulticastConfig();
-        multicastConfig.setEnabled(false);
+        MulticastConfig multicastConfig = new MulticastConfig().setEnabled(false);
 
-        TcpIpConfig tcpIpConfig = new TcpIpConfig();
-        tcpIpConfig.setEnabled(true);
-        tcpIpConfig.setMembers(Arrays.asList("127.0.0.1"));
+        TcpIpConfig tcpIpConfig = new TcpIpConfig()
+          .addMember("localhost")
+          .setEnabled(true);
 
-        JoinConfig joinConfig = new JoinConfig();
-        joinConfig.setTcpIpConfig(tcpIpConfig);
-        joinConfig.setMulticastConfig(multicastConfig);
+        JoinConfig joinConfig = new JoinConfig()
+          .setMulticastConfig(multicastConfig)
+          .setTcpIpConfig(tcpIpConfig);
 
-        NetworkConfig networkConfig = new NetworkConfig();
-        networkConfig.setJoin(joinConfig);
+        NetworkConfig networkConfig = new NetworkConfig()
+          .setJoin(joinConfig);
 
-        hazelcastConfig.setNetworkConfig(networkConfig);
+        hazelcastConfig = new Config()
+          .setNetworkConfig(networkConfig);
 
         SerializationConfig serializationConfig = PortableSerialization.defaultSerializationConfig();
 
