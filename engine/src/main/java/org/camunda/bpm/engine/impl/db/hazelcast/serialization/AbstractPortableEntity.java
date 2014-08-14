@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.serialization;
 
 import java.io.IOException;
+import java.util.Date;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
@@ -58,6 +59,16 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
 
   protected abstract void readEntityFields(PortableReader reader) throws IOException;
 
+  protected Date readDate(PortableReader reader, String fieldName) throws IOException {
+    long value = reader.readLong(fieldName);
+
+    if (value == -1) {
+      return null;
+    }
+
+    return new Date(value);
+  }
+
   public void writePortable(PortableWriter writer) throws IOException {
     writer.writeUTF(ID_FIELD, wrappedEntity.getId());
     if (wrappedEntity instanceof HasDbRevision) {
@@ -68,5 +79,15 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
   }
 
   protected abstract void writeEntityFields(PortableWriter writer) throws IOException;
+
+  protected void writeDate(PortableWriter writer, String fieldName, Date date) throws IOException {
+    long value = -1;
+
+    if (date != null) {
+      value = date.getTime();
+    }
+
+    writer.writeLong(fieldName, value);
+  }
 
 }
