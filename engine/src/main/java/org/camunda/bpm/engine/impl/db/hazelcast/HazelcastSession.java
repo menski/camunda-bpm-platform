@@ -18,14 +18,12 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.TransactionalMap;
 import com.hazelcast.transaction.TransactionContext;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
@@ -36,9 +34,12 @@ import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableSerialization;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.entityMapping;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.getMapNameForEntityType;
 import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 /**
@@ -69,7 +70,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   public <T extends AbstractPortableEntity<?>> TransactionalMap<String, T> getTransactionalMap(Class<? extends DbEntity> type) {
-    return (TransactionalMap) getTransactionalMap(HazelcastSessionFactory.getMapNameForEntityType(type));
+    return (TransactionalMap) getTransactionalMap(getMapNameForEntityType(type));
   }
 
   public IMap<Object, Object> getMap(String mapName) {
@@ -81,7 +82,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   public <T extends AbstractPortableEntity<?>> IMap<String, T> getMap(Class<? extends DbEntity> type) {
-    return (IMap) getTransactionalMap(HazelcastSessionFactory.getMapNameForEntityType(type));
+    return (IMap) getTransactionalMap(getMapNameForEntityType(type));
   }
 
   protected void insertEntity(DbEntityOperation operation) {
@@ -172,7 +173,11 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void dbSchemaCreateEngine() {
-    // nothing to do
+    // set indexes
+    IMap<Object, Object> executionMap = hazelcastInstance.getMap(getMapNameForEntityType(ExecutionEntity.class));
+    executionMap.addIndex(PortableExecutionEntity.PARENT_ID_FIELD, false);
+    executionMap.addIndex(PortableExecutionEntity.PROCESS_INSTANCE_ID_FIELD, false);
+    executionMap.addIndex(PortableExecutionEntity.PROCESS_DEFINITION_ID_FIELD, false);
   }
 
   protected void dbSchemaCreateCmmn() {
@@ -191,7 +196,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
 
   protected void dbSchemaDropEngine() {
     for (String mapNames : entityMapping.values()) {
-      getMap(mapNames).clear();
+      getMap(mapNames).destroy();
     }
   }
 

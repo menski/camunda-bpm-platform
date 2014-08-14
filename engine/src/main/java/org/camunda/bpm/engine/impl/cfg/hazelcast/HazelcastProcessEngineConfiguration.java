@@ -114,6 +114,7 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
           .setUrl("http://localhost:8080/mancenter")
           .setEnabled(true)
         );
+
       }
       hazelcastInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
     }
