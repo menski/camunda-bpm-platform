@@ -18,6 +18,7 @@ import java.util.Map;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
@@ -40,6 +41,7 @@ public class PortableSerialization {
     entityMapping.put(ExecutionEntity.class, PortableExecutionEntity.class);
     entityMapping.put(DeploymentEntity.class, PortableDeploymentEntity.class);
     entityMapping.put(ResourceEntity.class, PortableResourceEntity.class);
+    entityMapping.put(ProcessDefinitionEntity.class, PortableProcessDefinitionEntity.class);
   }
 
   public static <T extends AbstractPortableEntity<?>> T createPortableInstance(DbEntity entity) {
@@ -58,6 +60,7 @@ public class PortableSerialization {
     serializationConfig.addClassDefinition(PortableExecutionEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableDeploymentEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableResourceEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableProcessDefinitionEntity.getClassDefinition());
 
     return serializationConfig;
   }
