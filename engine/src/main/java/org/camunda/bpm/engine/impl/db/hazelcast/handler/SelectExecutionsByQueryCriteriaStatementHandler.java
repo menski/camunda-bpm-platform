@@ -23,9 +23,9 @@ import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
  * @author Daniel Meyer
  *
  */
-public class SelectExecutionsByQueryCriterieaStatementHandler extends SelectEntitiesByMapHandler {
+public class SelectExecutionsByQueryCriteriaStatementHandler extends SelectEntitiesByMapHandler {
 
-  public SelectExecutionsByQueryCriterieaStatementHandler() {
+  public SelectExecutionsByQueryCriteriaStatementHandler() {
     super(ExecutionEntity.class);
   }
 

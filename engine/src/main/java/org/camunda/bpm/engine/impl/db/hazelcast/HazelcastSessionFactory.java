@@ -90,7 +90,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler = new HashMap<String, SelectEntitiesStatementHandler>();
     selectEntitiesStatementHandler.put("selectExecutionsByParentExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PARENT_ID_FIELD));
     selectEntitiesStatementHandler.put("selectExecutionsByProcessInstanceId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_INSTANCE_ID_FIELD));
-    selectEntitiesStatementHandler.put("selectExecutionsByQueryCriteria", new SelectExecutionsByQueryCriterieaStatementHandler());
+    selectEntitiesStatementHandler.put("selectExecutionsByQueryCriteria", new SelectExecutionsByQueryCriteriaStatementHandler());
+    selectEntitiesStatementHandler.put("selectProcessInstanceByQueryCriteria", new SelectProcessInstanceByQueryCriteriaStatementHandler());
     selectEntitiesStatementHandler.put("selectSubProcessInstanceBySuperCaseExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.SUPER_EXECUTION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectTasksByParentTaskId", new SelectEntitiesByKeyHandler(TaskEntity.class, "parentTaskId"));
     selectEntitiesStatementHandler.put("selectTasksByExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "executionId"));

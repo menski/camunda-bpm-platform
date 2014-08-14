@@ -129,7 +129,19 @@
       </build>
 
     </profile>
-    
+
+    <profile>
+      <id>hazelcast</id>
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources-hazelcast</directory>
+            <filtering>true</filtering>
+          </testResource>
+        </testResources>
+      </build>
+    </profile>
+
      <profile>
       
       <!-- Allows to log the process engine's interaction with the database -->     
