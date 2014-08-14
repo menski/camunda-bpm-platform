@@ -60,7 +60,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
     return (IMap<String, T>) getMap(operation.getEntityType());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T extends AbstractPortableEntity<?>> IMap<String, T> getMap(Class<? extends DbEntity> type) {
     return (IMap) getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
   }

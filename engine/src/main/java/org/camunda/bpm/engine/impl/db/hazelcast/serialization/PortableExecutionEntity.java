@@ -47,19 +47,19 @@ public class PortableExecutionEntity extends AbstractPortableEntity<ExecutionEnt
 
   public static ClassDefinition getClassDefinition() {
     return new ClassDefinitionBuilder(PortableEntityFactory.ID, ID)
-      .addCharArrayField(ID_FIELD)
-      .addCharArrayField(REVISION_FIELD)
-      .addCharArrayField(PROCESS_INSTANCE_ID_FIELD)
-      .addCharArrayField(BUSINESS_KEY_FIELD)
-      .addCharArrayField(PROCESS_DEFINITION_ID_FIELD)
-      .addCharArrayField(ACTIVITY_ID_FIELD)
-      .addCharArrayField(ACTIVITY_INSTANCE_ID_FIELD)
+      .addUTFField(ID_FIELD)
+      .addUTFField(REVISION_FIELD)
+      .addUTFField(PROCESS_INSTANCE_ID_FIELD)
+      .addUTFField(BUSINESS_KEY_FIELD)
+      .addUTFField(PROCESS_DEFINITION_ID_FIELD)
+      .addUTFField(ACTIVITY_ID_FIELD)
+      .addUTFField(ACTIVITY_INSTANCE_ID_FIELD)
       .addBooleanField(IS_ACTIVE_FIELD)
       .addBooleanField(IS_CONCURRENT_FIELD)
       .addBooleanField(IS_SCOPE_FIELD)
-      .addCharArrayField(SUPER_EXECUTION_ID_FIELD)
-      .addCharArrayField(SUPER_CASE_EXECUTION_ID_FIELD)
-      .addCharArrayField(CASE_INSTANCE_ID_FIELD)
+      .addUTFField(SUPER_EXECUTION_ID_FIELD)
+      .addUTFField(SUPER_CASE_EXECUTION_ID_FIELD)
+      .addUTFField(CASE_INSTANCE_ID_FIELD)
       .addIntField(SUSPENSION_STATE_FIELD)
       .addIntField(CACHED_ENTITY_STATE_FIELD)
     .build();
@@ -74,38 +74,38 @@ public class PortableExecutionEntity extends AbstractPortableEntity<ExecutionEnt
   }
 
   protected void readEntityFields(PortableReader reader) throws IOException {
-    wrappedEntity.setProcessInstanceId(new String(reader.readCharArray(PROCESS_INSTANCE_ID_FIELD)));
-    wrappedEntity.setBusinessKey(new String(reader.readCharArray(BUSINESS_KEY_FIELD)));
-    wrappedEntity.setProcessDefinitionId(new String(reader.readCharArray(PROCESS_DEFINITION_ID_FIELD)));
-    wrappedEntity.setActivityId(new String(reader.readCharArray(ACTIVITY_ID_FIELD)));
-    wrappedEntity.setActivityInstanceId(new String(reader.readCharArray(ACTIVITY_INSTANCE_ID_FIELD)));
+    wrappedEntity.setProcessInstanceId(reader.readUTF(PROCESS_INSTANCE_ID_FIELD));
+    wrappedEntity.setBusinessKey(reader.readUTF(BUSINESS_KEY_FIELD));
+    wrappedEntity.setProcessDefinitionId(reader.readUTF(PROCESS_DEFINITION_ID_FIELD));
+    wrappedEntity.setActivityId(reader.readUTF(ACTIVITY_ID_FIELD));
+    wrappedEntity.setActivityInstanceId(reader.readUTF(ACTIVITY_INSTANCE_ID_FIELD));
     wrappedEntity.setActive(reader.readBoolean(IS_ACTIVE_FIELD));
     wrappedEntity.setConcurrent(reader.readBoolean(IS_CONCURRENT_FIELD));
     wrappedEntity.setScope(reader.readBoolean(IS_SCOPE_FIELD));
     wrappedEntity.setEventScope(reader.readBoolean(IS_EVENT_SCOPE_FIELD));
-    wrappedEntity.setParentId(new String(reader.readCharArray(PARENT_ID_FIELD)));
-    wrappedEntity.setSuperExecutionId(new String(reader.readCharArray(SUPER_EXECUTION_ID_FIELD)));
-    wrappedEntity.setSuperCaseExecutionId(new String(reader.readCharArray(SUPER_CASE_EXECUTION_ID_FIELD)));
-    wrappedEntity.setCaseInstanceId(new String(reader.readCharArray(CASE_INSTANCE_ID_FIELD)));
+    wrappedEntity.setParentId(reader.readUTF(PARENT_ID_FIELD));
+    wrappedEntity.setSuperExecutionId(reader.readUTF(SUPER_EXECUTION_ID_FIELD));
+    wrappedEntity.setSuperCaseExecutionId(reader.readUTF(SUPER_CASE_EXECUTION_ID_FIELD));
+    wrappedEntity.setCaseInstanceId(reader.readUTF(CASE_INSTANCE_ID_FIELD));
     wrappedEntity.setSuspensionState(reader.readInt(SUSPENSION_STATE_FIELD));
     wrappedEntity.setCachedEntityState(reader.readInt(CACHED_ENTITY_STATE_FIELD));
   }
 
   protected void writeEntityFields(PortableWriter writer) throws IOException {
     if(wrappedEntity.getProcessInstanceId() != null) {
-      writer.writeCharArray(PROCESS_INSTANCE_ID_FIELD, wrappedEntity.getProcessInstanceId().toCharArray());
+      writer.writeUTF(PROCESS_INSTANCE_ID_FIELD, wrappedEntity.getProcessInstanceId());
     }
     if(wrappedEntity.getBusinessKey() != null) {
-      writer.writeCharArray(BUSINESS_KEY_FIELD, wrappedEntity.getBusinessKey().toCharArray());
+      writer.writeUTF(BUSINESS_KEY_FIELD, wrappedEntity.getBusinessKey());
     }
     if(wrappedEntity.getProcessDefinitionId() != null) {
-      writer.writeCharArray(PROCESS_DEFINITION_ID_FIELD, wrappedEntity.getProcessDefinitionId().toCharArray());
+      writer.writeUTF(PROCESS_DEFINITION_ID_FIELD, wrappedEntity.getProcessDefinitionId());
     }
     if(wrappedEntity.getActivityId() != null) {
-      writer.writeCharArray(ACTIVITY_ID_FIELD, wrappedEntity.getActivityId().toCharArray());
+      writer.writeUTF(ACTIVITY_ID_FIELD, wrappedEntity.getActivityId());
     }
     if(wrappedEntity.getActivityInstanceId() != null) {
-      writer.writeCharArray(ACTIVITY_INSTANCE_ID_FIELD, wrappedEntity.getActivityInstanceId().toCharArray());
+      writer.writeUTF(ACTIVITY_INSTANCE_ID_FIELD, wrappedEntity.getActivityInstanceId());
     }
 
     writer.writeBoolean(IS_ACTIVE_FIELD, wrappedEntity.isActive());
@@ -114,20 +114,20 @@ public class PortableExecutionEntity extends AbstractPortableEntity<ExecutionEnt
     writer.writeBoolean(IS_EVENT_SCOPE_FIELD, wrappedEntity.isEventScope());
 
     if(wrappedEntity.getParentId() != null) {
-      writer.writeCharArray(PARENT_ID_FIELD, wrappedEntity.getParentId().toCharArray());
+      writer.writeUTF(PARENT_ID_FIELD, wrappedEntity.getParentId());
     }
     if(wrappedEntity.getSuperExecutionId() != null) {
-      writer.writeCharArray(SUPER_EXECUTION_ID_FIELD, wrappedEntity.getSuperExecutionId().toCharArray());
+      writer.writeUTF(SUPER_EXECUTION_ID_FIELD, wrappedEntity.getSuperExecutionId());
     }
     if(wrappedEntity.getSuperCaseExecutionId() != null) {
-      writer.writeCharArray(SUPER_CASE_EXECUTION_ID_FIELD, wrappedEntity.getSuperCaseExecutionId().toCharArray());
+      writer.writeUTF(SUPER_CASE_EXECUTION_ID_FIELD, wrappedEntity.getSuperCaseExecutionId());
     }
     if(wrappedEntity.getCaseInstanceId() != null) {
-      writer.writeCharArray(CASE_INSTANCE_ID_FIELD, wrappedEntity.getCaseInstanceId().toCharArray());
+      writer.writeUTF(CASE_INSTANCE_ID_FIELD, wrappedEntity.getCaseInstanceId());
     }
 
-    writer.writeCharArray(SUSPENSION_STATE_FIELD, wrappedEntity.getProcessInstanceId().toCharArray());
-    writer.writeCharArray(CACHED_ENTITY_STATE_FIELD, wrappedEntity.getProcessInstanceId().toCharArray());
+    writer.writeInt(SUSPENSION_STATE_FIELD, wrappedEntity.getSuspensionState());
+    writer.writeInt(CACHED_ENTITY_STATE_FIELD, wrappedEntity.getCachedEntityState());
   }
 
 }

@@ -16,7 +16,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
+import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
 
 import com.hazelcast.config.SerializationConfig;
@@ -32,12 +36,16 @@ public class PortableSerialization {
 
   static {
     entityMapping = new HashMap<Class<? extends DbEntity>, Class<? extends AbstractPortableEntity<?>>>();
+    entityMapping.put(PropertyEntity.class, PortablePropertyEntity.class);
     entityMapping.put(ExecutionEntity.class, PortableExecutionEntity.class);
+    entityMapping.put(DeploymentEntity.class, PortableDeploymentEntity.class);
+    entityMapping.put(ResourceEntity.class, PortableResourceEntity.class);
   }
 
   public static <T extends AbstractPortableEntity<?>> T createPortableInstance(DbEntity entity) {
     Class<? extends DbEntity> type = entity.getClass();
     Class<? extends AbstractPortableEntity<?>> portableType = entityMapping.get(type);
+    EnsureUtil.ensureNotNull("Cannot find portable type for entity type "+type, "portable type", portableType);
     AbstractPortableEntity portable = ReflectUtil.instantiate(portableType);
     portable.setEntity(entity);
     return (T) portable;
@@ -46,7 +54,10 @@ public class PortableSerialization {
   public static SerializationConfig defaultSerializationConfig() {
     SerializationConfig serializationConfig = new SerializationConfig();
 
+    serializationConfig.addClassDefinition(PortablePropertyEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableExecutionEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableDeploymentEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableResourceEntity.getClassDefinition());
 
     return serializationConfig;
   }

@@ -46,7 +46,7 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
 
   public void readPortable(PortableReader reader) throws IOException {
     wrappedEntity = createEntityInstance();
-    wrappedEntity.setId(new String(reader.readCharArray(ID_FIELD)));
+    wrappedEntity.setId(new String(reader.readUTF(ID_FIELD)));
     if (wrappedEntity instanceof HasDbRevision) {
       HasDbRevision revisionedObject = (HasDbRevision) wrappedEntity;
       revisionedObject.setRevision(reader.readInt(REVISION_FIELD));
@@ -59,7 +59,7 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
   protected abstract void readEntityFields(PortableReader reader) throws IOException;
 
   public void writePortable(PortableWriter writer) throws IOException {
-    writer.writeCharArray(ID_FIELD, wrappedEntity.getId().toCharArray());
+    writer.writeUTF(ID_FIELD, wrappedEntity.getId());
     if (wrappedEntity instanceof HasDbRevision) {
       HasDbRevision revisionedObject = (HasDbRevision) wrappedEntity;
       writer.writeInt(REVISION_FIELD, revisionedObject.getRevision());

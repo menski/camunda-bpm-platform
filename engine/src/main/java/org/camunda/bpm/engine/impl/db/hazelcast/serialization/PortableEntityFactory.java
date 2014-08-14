@@ -24,8 +24,17 @@ public class PortableEntityFactory implements PortableFactory {
   public final static int ID = 1;
 
   public Portable create(int classId) {
+    if(PortablePropertyEntity.ID == classId) {
+      return new PortablePropertyEntity();
+    }
     if(PortableExecutionEntity.ID == classId) {
       return new PortableExecutionEntity();
+    }
+    if(PortableDeploymentEntity.ID == classId) {
+      return new PortableDeploymentEntity();
+    }
+    if(PortableResourceEntity.ID == classId) {
+      return new PortableResourceEntity();
     }
     return null;
   }
