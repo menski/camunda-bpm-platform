@@ -11,11 +11,11 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.impl.db.hazelcast;
+package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import java.util.List;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesByKeyHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
+
+import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 
 /**

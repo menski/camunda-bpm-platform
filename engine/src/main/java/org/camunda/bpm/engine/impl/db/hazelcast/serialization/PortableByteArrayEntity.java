@@ -47,7 +47,7 @@ public class PortableByteArrayEntity extends AbstractPortableEntity<ByteArrayEnt
     .build();
   }
 
-  protected ByteArrayEntity createEntityInstance() {
+  protected ByteArrayEntity createEntityInstance(PortableReader reader) throws IOException {
     return new ByteArrayEntity();
   }
 

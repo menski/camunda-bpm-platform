@@ -44,7 +44,7 @@ public class PortableDeploymentEntity extends AbstractPortableEntity<DeploymentE
     .build();
   }
 
-  protected DeploymentEntity createEntityInstance() {
+  protected DeploymentEntity createEntityInstance(PortableReader reader) throws IOException {
     return new DeploymentEntity();
   }
 

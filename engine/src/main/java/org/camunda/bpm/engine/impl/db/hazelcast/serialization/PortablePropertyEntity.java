@@ -44,7 +44,7 @@ public class PortablePropertyEntity extends AbstractPortableEntity<PropertyEntit
     .build();
   }
 
-  protected PropertyEntity createEntityInstance() {
+  protected PropertyEntity createEntityInstance(PortableReader reader) throws IOException {
     return new PropertyEntity();
   }
 

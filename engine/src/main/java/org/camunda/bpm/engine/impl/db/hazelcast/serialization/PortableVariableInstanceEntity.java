@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.impl.db.hazelcast.serialization;
 import java.io.IOException;
 
 import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
+
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.ClassDefinitionBuilder;
 import com.hazelcast.nio.serialization.PortableReader;
@@ -68,7 +69,7 @@ public class PortableVariableInstanceEntity extends AbstractPortableEntity<Varia
     .build();
   }
 
-  protected VariableInstanceEntity createEntityInstance() {
+  protected VariableInstanceEntity createEntityInstance(PortableReader reader) throws IOException {
     return new VariableInstanceEntity();
   }
 

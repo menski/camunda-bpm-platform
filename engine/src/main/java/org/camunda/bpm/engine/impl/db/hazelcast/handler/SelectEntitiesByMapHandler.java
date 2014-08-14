@@ -13,12 +13,14 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
-import com.hazelcast.query.SqlPredicate;
 import java.util.List;
 import java.util.Map;
+
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+
+import com.hazelcast.query.SqlPredicate;
 
 /**
  * @author Sebastian Menski
@@ -31,7 +33,12 @@ public class SelectEntitiesByMapHandler extends AbstractSelectEntitiesStatementH
 
   public List<?> execute(HazelcastSession session, Object parameter) {
     Map<String, Object> parameterMap = getParameterMap(parameter);
-    SqlPredicate predicate = SqlPredicateFactory.createAndPredicate(parameterMap);
+
+    SqlPredicate predicate = null;
+    if (parameterMap != null && !parameterMap.isEmpty()) {
+      predicate = SqlPredicateFactory.createAndPredicate(parameterMap);
+    }
+
     List<?> entities = selectByPredicate(session, predicate);
     return filterEntities(entities);
   }

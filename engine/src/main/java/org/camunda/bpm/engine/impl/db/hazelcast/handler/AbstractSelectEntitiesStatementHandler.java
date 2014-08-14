@@ -13,8 +13,6 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
-import com.hazelcast.query.SqlPredicate;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,6 +20,9 @@ import java.util.List;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
+
+import com.hazelcast.core.TransactionalMap;
+import com.hazelcast.query.SqlPredicate;
 
 /**
  * @author Sebastian Menski
@@ -34,7 +35,16 @@ public abstract class AbstractSelectEntitiesStatementHandler extends TypeAwareSt
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   protected List<?> selectByPredicate(HazelcastSession session, SqlPredicate predicate) {
-    return (List) getEntityList((Collection)session.getTransactionalMap(type).values(predicate));
+    TransactionalMap<String, AbstractPortableEntity<?>> map = session.getTransactionalMap(type);
+
+    Collection values = null;
+    if (predicate != null) {
+      values = (Collection) map.values(predicate);
+    } else {
+      values = (Collection) map.values();
+    }
+
+    return (List) getEntityList(values);
   }
 
   protected <T extends DbEntity> List<T> getEntityList(Collection<AbstractPortableEntity<T>> values) {

@@ -59,7 +59,7 @@ public class PortableProcessDefinitionEntity extends AbstractPortableEntity<Proc
     .build();
   }
 
-  protected ProcessDefinitionEntity createEntityInstance() {
+  protected ProcessDefinitionEntity createEntityInstance(PortableReader reader) throws IOException {
     return new ProcessDefinitionEntity();
   }
 

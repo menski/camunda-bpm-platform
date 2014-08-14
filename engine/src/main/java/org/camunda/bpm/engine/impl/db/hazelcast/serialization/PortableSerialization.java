@@ -17,11 +17,14 @@ import java.util.Map;
 
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.CompensateEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.MessageEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
@@ -48,6 +51,9 @@ public class PortableSerialization {
     entityMapping.put(TaskEntity.class, PortableTaskEntity.class);
     entityMapping.put(VariableInstanceEntity.class, PortableVariableInstanceEntity.class);
     entityMapping.put(ByteArrayEntity.class, PortableByteArrayEntity.class);
+    entityMapping.put(CompensateEventSubscriptionEntity.class, PortableEventSubscriptionEntity.class);
+    entityMapping.put(MessageEventSubscriptionEntity.class, PortableEventSubscriptionEntity.class);
+    entityMapping.put(SignalEventSubscriptionEntity.class, PortableEventSubscriptionEntity.class);
   }
 
   public static <T extends AbstractPortableEntity<?>> T createPortableInstance(DbEntity entity) {
@@ -70,6 +76,7 @@ public class PortableSerialization {
     serializationConfig.addClassDefinition(PortableTaskEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableVariableInstanceEntity.getClassDefinition());
     serializationConfig.addClassDefinition(PortableByteArrayEntity.getClassDefinition());
+    serializationConfig.addClassDefinition(PortableEventSubscriptionEntity.getClassDefinition());
 
     serializationConfig.addPortableFactory(PortableEntityFactory.ID, new PortableEntityFactory());
 

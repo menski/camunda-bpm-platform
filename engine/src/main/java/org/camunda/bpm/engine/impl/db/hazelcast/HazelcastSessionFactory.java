@@ -29,13 +29,16 @@ import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesStatementH
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityByIdHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEventSubscriptionsByConfiguration;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEventSubscriptionsByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectExecutionsByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectJobByConfigurationHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectLatestProcessDefinitionHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionByDeploymentAndKeyHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceIdsByKeyHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectTasksByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectVariableInstancesByQueryCriteriaStatementHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableTaskEntity;
@@ -43,15 +46,18 @@ import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableVariableIn
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.CompensateEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.IdentityLinkEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.MessageEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 
@@ -89,6 +95,9 @@ public class HazelcastSessionFactory implements SessionFactory {
     entityMapping.put(JobEntity.class, ENGINE_JOB_MAP_NAME);
     entityMapping.put(JobDefinitionEntity.class, ENGINE_JOB_DEFINITION_MAP_NAME);
     entityMapping.put(EventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
+    entityMapping.put(CompensateEventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
+    entityMapping.put(MessageEventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
+    entityMapping.put(SignalEventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
     entityMapping.put(IdentityLinkEntity.class, ENGINE_IDENTITY_LINK_MAP_NAME);
     entityMapping.put(TaskEntity.class, ENGINE_TASK_MAP_NAME);
     entityMapping.put(VariableInstanceEntity.class, ENGINE_VARIABLE_INSTANCE_MAP_NAME);
@@ -140,6 +149,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectCaseDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(CaseDefinitionEntity.class, "deploymentId"));
     selectEntitiesStatementHandler.put("selectProcessInstanceIdsByProcessDefinitionId", new SelectProcessInstanceIdsByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_DEFINITION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectEventSubscriptionsByConfiguration", new SelectEventSubscriptionsByConfiguration());
+    selectEntitiesStatementHandler.put("selectEventSubscriptionsByExecution", new SelectEntitiesByKeyHandler(EventSubscriptionEntity.class, PortableEventSubscriptionEntity.EXECUTION_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectEventSubscriptionByQueryCriteria", new SelectEventSubscriptionsByQueryCriteriaStatementHandler());
     selectEntitiesStatementHandler.put("selectIdentityLinksByTask", new SelectEntitiesByKeyHandler(IdentityLinkEntity.class, "taskId"));
     selectEntitiesStatementHandler.put("selectVariableInstanceByQueryCriteria", new SelectVariableInstancesByQueryCriteriaStatementHandler());
 

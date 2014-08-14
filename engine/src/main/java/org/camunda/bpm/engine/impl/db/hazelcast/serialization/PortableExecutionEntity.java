@@ -71,7 +71,7 @@ public class PortableExecutionEntity extends AbstractPortableEntity<ExecutionEnt
     return ID;
   }
 
-  protected ExecutionEntity createEntityInstance() {
+  protected ExecutionEntity createEntityInstance(PortableReader reader) throws IOException {
     return new ExecutionEntity();
   }
 

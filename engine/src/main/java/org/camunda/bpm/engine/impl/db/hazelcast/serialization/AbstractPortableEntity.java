@@ -46,7 +46,7 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
   }
 
   public void readPortable(PortableReader reader) throws IOException {
-    wrappedEntity = createEntityInstance();
+    wrappedEntity = createEntityInstance(reader);
     wrappedEntity.setId(new String(reader.readUTF(ID_FIELD)));
     if (wrappedEntity instanceof HasDbRevision) {
       HasDbRevision revisionedObject = (HasDbRevision) wrappedEntity;
@@ -55,7 +55,7 @@ public abstract class AbstractPortableEntity<T extends DbEntity> implements Port
     readEntityFields(reader);
   }
 
-  protected abstract T createEntityInstance();
+  protected abstract T createEntityInstance(PortableReader reader) throws IOException;
 
   protected abstract void readEntityFields(PortableReader reader) throws IOException;
 

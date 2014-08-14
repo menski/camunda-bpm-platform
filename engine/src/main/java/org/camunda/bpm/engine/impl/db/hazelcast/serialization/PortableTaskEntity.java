@@ -78,7 +78,7 @@ public class PortableTaskEntity extends AbstractPortableEntity<TaskEntity> {
     .build();
   }
 
-  protected TaskEntity createEntityInstance() {
+  protected TaskEntity createEntityInstance(PortableReader reader) throws IOException {
     return new TaskEntity();
   }
 

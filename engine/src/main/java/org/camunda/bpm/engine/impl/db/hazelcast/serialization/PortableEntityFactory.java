@@ -48,6 +48,9 @@ public class PortableEntityFactory implements PortableFactory {
     if(PortableByteArrayEntity.ID == classId) {
       return new PortableByteArrayEntity();
     }
+    if(PortableEventSubscriptionEntity.ID == classId) {
+      return new PortableEventSubscriptionEntity();
+    }
 
     return null;
   }

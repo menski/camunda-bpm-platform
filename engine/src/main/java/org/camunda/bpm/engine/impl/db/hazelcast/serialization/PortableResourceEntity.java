@@ -48,7 +48,7 @@ public class PortableResourceEntity extends AbstractPortableEntity<ResourceEntit
     .build();
   }
 
-  protected ResourceEntity createEntityInstance() {
+  protected ResourceEntity createEntityInstance(PortableReader reader) throws IOException {
     return new ResourceEntity();
   }
 
