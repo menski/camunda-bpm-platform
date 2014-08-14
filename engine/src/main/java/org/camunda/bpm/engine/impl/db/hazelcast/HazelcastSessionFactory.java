@@ -34,6 +34,7 @@ import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectExecutionsByQueryC
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectJobByConfigurationHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectLatestProcessDefinitionHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionByDeploymentAndKeyHandler;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionsByCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceByQueryCriteriaStatementHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceIdsByKeyHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectTasksByQueryCriteriaStatementHandler;
@@ -146,6 +147,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectJobsByExecutionId", new SelectEntitiesByKeyHandler(JobEntity.class, "executionId"));
     selectEntitiesStatementHandler.put("selectJobsByConfiguration", new SelectJobByConfigurationHandler());
     selectEntitiesStatementHandler.put("selectProcessDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, PortableProcessDefinitionEntity.DEPLOYMENT_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectProcessDefinitionsByQueryCriteria", new SelectProcessDefinitionsByCriteriaStatementHandler());
     selectEntitiesStatementHandler.put("selectCaseDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(CaseDefinitionEntity.class, "deploymentId"));
     selectEntitiesStatementHandler.put("selectProcessInstanceIdsByProcessDefinitionId", new SelectProcessInstanceIdsByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_DEFINITION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectEventSubscriptionsByConfiguration", new SelectEventSubscriptionsByConfiguration());
