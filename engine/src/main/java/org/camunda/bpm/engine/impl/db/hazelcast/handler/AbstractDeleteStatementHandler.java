@@ -18,7 +18,7 @@ import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
 
-import com.hazelcast.core.IMap;
+import com.hazelcast.core.TransactionalMap;
 import com.hazelcast.query.SqlPredicate;
 
 /**
@@ -32,7 +32,7 @@ public abstract class AbstractDeleteStatementHandler extends TypeAwareStatementH
   }
 
   protected void deleteByPredicate(HazelcastSession session, SqlPredicate predicate) {
-    IMap<String,? extends AbstractPortableEntity<?>> map = session.getMap(type);
+    TransactionalMap<String,? extends AbstractPortableEntity<?>> map = session.getTransactionalMap(type);
     Set<String> keys = map.keySet(predicate);
 
     for (String key : keys) {

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.impl.cfg.standalone.StandaloneTransactionContextFactory;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastPersistenceProviderFactory;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableSerialization;
@@ -125,7 +126,7 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
 
   protected void initTransactionContextFactory() {
     if (transactionContextFactory==null) {
-      transactionContextFactory = new HazelcastTranscationContextFactory(this);
+      transactionContextFactory = new StandaloneTransactionContextFactory();
     }
   }
 

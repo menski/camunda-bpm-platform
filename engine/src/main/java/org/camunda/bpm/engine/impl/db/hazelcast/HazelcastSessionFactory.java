@@ -106,7 +106,7 @@ public class HazelcastSessionFactory implements SessionFactory {
   }
 
   public Session openSession() {
-    return new HazelcastSession(hazelcastInstance);
+    return new HazelcastSession(hazelcastInstance, true);
   }
 
   public static String getMapNameForEntityType(Class<? extends DbEntity> type) {

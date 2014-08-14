@@ -28,7 +28,7 @@ public class SelectEntityByIdHandler extends TypeAwareStatementHandler implement
 
   @SuppressWarnings("unchecked")
   public <T extends DbEntity> T execute(HazelcastSession session, Object parameter) {
-    AbstractPortableEntity<T> abstractPortableEntity = (AbstractPortableEntity<T>) session.getMap(type).get(parameter);
+    AbstractPortableEntity<T> abstractPortableEntity = (AbstractPortableEntity<T>) session.getTransactionalMap(type).get(parameter);
     if(abstractPortableEntity != null) {
       return abstractPortableEntity.getEntity();
     } else {

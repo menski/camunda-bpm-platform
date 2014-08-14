@@ -13,14 +13,19 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
+import com.hazelcast.core.BaseMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.TransactionalMap;
+import com.hazelcast.transaction.TransactionContext;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
@@ -39,28 +44,44 @@ import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 /**
  * @author Sebastian Menski
  */
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class HazelcastSession extends AbstractPersistenceSession {
 
   private final static Logger log = Logger.getLogger(HazelcastSession.class.getName());
 
   protected HazelcastInstance hazelcastInstance;
+  protected TransactionContext transactionContext;
 
-  public HazelcastSession(HazelcastInstance hazelcastInstance) {
+  public HazelcastSession(HazelcastInstance hazelcastInstance, boolean openTransaction) {
     this.hazelcastInstance = hazelcastInstance;
+    if(openTransaction) {
+      this.transactionContext = hazelcastInstance.newTransactionContext();
+      this.transactionContext.beginTransaction();
+    }
+  }
+
+  public TransactionalMap<Object, Object> getTransactionalMap(String mapName) {
+    return transactionContext.getMap(mapName);
+  }
+
+  public <T extends AbstractPortableEntity<?>> TransactionalMap<String, T> getTransactionalMap(DbEntityOperation operation) {
+    return (TransactionalMap<String, T>) getTransactionalMap(operation.getEntityType());
+  }
+
+  public <T extends AbstractPortableEntity<?>> TransactionalMap<String, T> getTransactionalMap(Class<? extends DbEntity> type) {
+    return (TransactionalMap) getTransactionalMap(HazelcastSessionFactory.getMapNameForEntityType(type));
   }
 
   public IMap<Object, Object> getMap(String mapName) {
     return hazelcastInstance.getMap(mapName);
   }
 
-  @SuppressWarnings("unchecked")
   public <T extends AbstractPortableEntity<?>> IMap<String, T> getMap(DbEntityOperation operation) {
-    return (IMap<String, T>) getMap(operation.getEntityType());
+    return (IMap<String, T>) getTransactionalMap(operation.getEntityType());
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T extends AbstractPortableEntity<?>> IMap<String, T> getMap(Class<? extends DbEntity> type) {
-    return (IMap) getMap(HazelcastSessionFactory.getMapNameForEntityType(type));
+    return (IMap) getTransactionalMap(HazelcastSessionFactory.getMapNameForEntityType(type));
   }
 
   protected void insertEntity(DbEntityOperation operation) {
@@ -74,11 +95,11 @@ public class HazelcastSession extends AbstractPersistenceSession {
     // wrap as portable
     AbstractPortableEntity<?> portable = PortableSerialization.createPortableInstance(entity);
 
-    getMap(operation).put(entity.getId(), portable);
+    getTransactionalMap(operation).put(entity.getId(), portable);
   }
 
   protected void deleteEntity(DbEntityOperation operation) {
-    IMap<String, AbstractPortableEntity<?>> map = getMap(operation);
+    BaseMap<String, AbstractPortableEntity<?>> map = getTransactionalMap(operation);
 
     DbEntity removedEntity = operation.getEntity();
 
@@ -88,7 +109,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
       ensureNotNull(OptimisticLockingException.class, "dbRevision", dbPortable);
       HasDbRevision dbRevision = (HasDbRevision) dbPortable.getEntity();
       if (dbRevision.getRevision() != removedRevision.getRevision()) {
-        throw new OptimisticLockingException(removedEntity +  " was updated by another transaction");
+        throw new OptimisticLockingException(removedEntity +  " was updated by another transaction concurrently");
       }
     }
     else {
@@ -97,7 +118,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void updateEntity(DbEntityOperation operation) {
-    IMap<String, AbstractPortableEntity<?>> map = getMap(operation);
+    BaseMap<String, AbstractPortableEntity<?>> map = getTransactionalMap(operation);
     DbEntity updatedEntity = operation.getEntity();
 
     // wrap as portable
@@ -111,7 +132,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
       ensureNotNull(OptimisticLockingException.class, "dbRevision", dbPortable);
       HasDbRevision dbRevision = (HasDbRevision) dbPortable.getEntity();
       if (dbRevision.getRevision() != oldRevision) {
-        throw new OptimisticLockingException(updatedEntity + " was updated by another transaction");
+        throw new OptimisticLockingException(updatedEntity + " was updated by another transaction concurrently");
       }
     }
     else {
@@ -208,7 +229,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
 
   @SuppressWarnings("unchecked")
   public <T extends DbEntity> T selectById(Class<T> type, String id) {
-    AbstractPortableEntity<T> portable = (AbstractPortableEntity<T>) getMap(type).get(id);
+    AbstractPortableEntity<T> portable = (AbstractPortableEntity<T>) getTransactionalMap(type).get(id);
     if(portable != null) {
       return portable.getEntity();
     } else {
@@ -231,36 +252,37 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   public void commit() {
-    // TODO: implement
-
+    if(transactionContext != null) {
+      transactionContext.commitTransaction();
+    }
   }
 
   public void rollback() {
-    // TODO: implement
+    if(transactionContext != null) {
+      transactionContext.rollbackTransaction();
+    }
+  }
+
+  public void flush() {
+    // nothing to do
+  }
+
+  public void close() {
+    // nothing to do
 
   }
 
   public void dbSchemaCheckVersion() {
     // TODO: implement
-
   }
 
-  public void flush() {
-    // TODO: implement
-
-  }
-
-  public void close() {
-    // TODO: implement
-
-  }
 
   public Map<String, Long> getMapCounts() {
     Map<String, Long> counts = new HashMap<String, Long>();
 
     Collection<String> mapNames = HazelcastSessionFactory.entityMapping.values();
     for (String mapName : mapNames) {
-      counts.put(mapName, Integer.valueOf(getMap(mapName).size()).longValue());
+      counts.put(mapName, Integer.valueOf(getTransactionalMap(mapName).size()).longValue());
     }
 
     return counts;

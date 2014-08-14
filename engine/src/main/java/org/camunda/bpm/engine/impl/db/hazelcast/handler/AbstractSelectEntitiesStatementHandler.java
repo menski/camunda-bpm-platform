@@ -34,7 +34,7 @@ public abstract class AbstractSelectEntitiesStatementHandler extends TypeAwareSt
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   protected <T extends DbEntity> List<T> selectByPredicate(HazelcastSession session, SqlPredicate predicate) {
-    return getEntityList((Collection)session.getMap(type).values(predicate));
+    return getEntityList((Collection)session.getTransactionalMap(type).values(predicate));
   }
 
   protected <T extends DbEntity> List<T> getEntityList(Collection<AbstractPortableEntity<T>> values) {
