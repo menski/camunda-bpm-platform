@@ -69,7 +69,7 @@ public class PortableResourceEntity extends AbstractPortableEntity<ResourceEntit
     if(wrappedEntity.getDeploymentId() != null) {
       writer.writeUTF(DEPLOYMENT_ID_FIELD, wrappedEntity.getDeploymentId());
     }
-    writer.writeBoolean(NAME_FIELD, wrappedEntity.isGenerated());
+    writer.writeBoolean(GENERATED_FIELD, wrappedEntity.isGenerated());
   }
 
 }

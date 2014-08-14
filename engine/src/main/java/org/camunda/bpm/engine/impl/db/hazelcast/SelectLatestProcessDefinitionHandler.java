@@ -14,7 +14,6 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import java.util.List;
-import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesByKeyHandler;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
@@ -25,15 +24,15 @@ import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 public class SelectLatestProcessDefinitionHandler implements SelectEntityStatementHandler {
 
   @SuppressWarnings("unchecked")
-  public <T extends DbEntity> T execute(HazelcastSession session, Object parameter) {
-    SelectEntitiesByKeyHandler entitiesHandler = new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, "processDefinitionKey");
-    List<ProcessDefinitionEntity> entities = (List<ProcessDefinitionEntity>) entitiesHandler.execute(session, parameter);
+  public ProcessDefinitionEntity execute(HazelcastSession session, Object parameter) {
+    SelectEntitiesByKeyHandler entitiesHandler = new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, "key");
+    List<ProcessDefinitionEntity> entities = entitiesHandler.execute(session, parameter);
     ProcessDefinitionEntity latestVersion = null;
     for (ProcessDefinitionEntity entity : entities) {
       if (latestVersion == null || latestVersion.getVersion() < entity.getVersion()) {
         latestVersion = entity;
       }
     }
-    return (T) latestVersion;
+    return latestVersion;
   }
 }

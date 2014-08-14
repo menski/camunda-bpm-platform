@@ -13,16 +13,14 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
-
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.impl.db.AbstractPersistenceSession;
 import org.camunda.bpm.engine.impl.db.DbEntity;
@@ -35,8 +33,8 @@ import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHan
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.AbstractPortableEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableSerialization;
 
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import static org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSessionFactory.*;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 /**
  * @author Sebastian Menski
@@ -176,6 +174,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
     getMap(ENGINE_EXECUTION_MAP_NAME).clear();
     getMap(ENGINE_PROCESS_DEFINITION_MAP_NAME).clear();
     getMap(ENGINE_PROPERTY_MAP_NAME).clear();
+    getMap(ENGINE_JOB_MAP_NAME).clear();
   }
 
   protected void dbSchemaDropCmmn() {
@@ -204,7 +203,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
     }
 
     SelectEntitiesStatementHandler statementHandler = HazelcastSessionFactory.getSelectEntitiesStatementHandler(statement);
-    return statementHandler.execute(this, parameter);
+    return (List<?>) statementHandler.execute(this, parameter);
   }
 
   @SuppressWarnings("unchecked")

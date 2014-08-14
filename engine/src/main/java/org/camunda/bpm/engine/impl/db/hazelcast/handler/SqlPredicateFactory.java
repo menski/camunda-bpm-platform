@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import com.hazelcast.query.SqlPredicate;
+import java.util.Map;
 
 /**
  * @author Daniel Meyer
@@ -29,7 +30,7 @@ public class SqlPredicateFactory {
   }
 
   public static SqlPredicate createEqualPredicate(String key, Object value) {
-    return createSqlPredicate(String.format("%s = '%%s'", key), value);
+    return createSqlPredicate(String.format("%s = '%s'", key, value));
   }
 
   public static SqlPredicate createDeploymentIdPredicate(Object deploymentId) {
@@ -40,4 +41,16 @@ public class SqlPredicateFactory {
     return createEqualPredicate("parentExecutionId", parentExecutionId);
   }
 
+  public static SqlPredicate createAndPredicate(Map<String, String> parameterMap) {
+    String predicate = null;
+    for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+      if (predicate == null) {
+        predicate = String.format("%s == '%s'", entry.getKey(), entry.getValue());
+      }
+      else {
+        predicate = String.format("%s AND %s == '%s'", predicate, entry.getKey(), entry.getValue());
+      }
+    }
+    return createSqlPredicate(predicate);
+  }
 }

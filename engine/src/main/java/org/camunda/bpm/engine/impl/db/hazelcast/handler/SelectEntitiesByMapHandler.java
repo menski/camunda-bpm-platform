@@ -15,23 +15,35 @@ package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import com.hazelcast.query.SqlPredicate;
 import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 
 /**
  * @author Sebastian Menski
  */
-public class SelectEntitiesByKeyHandler extends AbstractSelectEntitiesStatementHandler {
+public class SelectEntitiesByMapHandler extends AbstractSelectEntitiesStatementHandler {
 
-  protected String key;
-
-  public SelectEntitiesByKeyHandler(Class<? extends DbEntity> type, String key) {
+  public SelectEntitiesByMapHandler(Class<? extends DbEntity> type) {
     super(type);
-    this.key = key;
   }
 
   public <T extends DbEntity> List<T> execute(HazelcastSession session, Object parameter) {
-    SqlPredicate predicate = SqlPredicateFactory.createEqualPredicate(key, parameter);
+    Map<String, String> parameterMap = getParameterMap(parameter);
+    SqlPredicate predicate = SqlPredicateFactory.createAndPredicate(parameterMap);
     return selectByPredicate(session, predicate);
   }
+
+  @SuppressWarnings("unchecked")
+  protected Map<String, String> getParameterMap(Object parameter) {
+    if (parameter instanceof ListQueryParameterObject) {
+      // TODO: add limit support
+      return (Map<String, String>) ((ListQueryParameterObject) parameter).getParameter();
+    }
+    else {
+      return (Map<String, String>) parameter;
+    }
+  }
+
 }

@@ -38,6 +38,7 @@ public class HazelcastSessionFactory implements SessionFactory {
   public final static String ENGINE_PROCESS_DEFINITION_MAP_NAME = "cam.engine.process_definition";
   public final static String ENGINE_PROPERTY_MAP_NAME = "cam.engine.property";
   public final static String ENGINE_EXECUTION_MAP_NAME = "cam.engine.execution";
+  public final static String ENGINE_JOB_MAP_NAME = "cam.engine.job";
 
   public final static String ENGINE_CASE_DEFINITION_MAP_NAME = "cam.engine.case_definition";
 
@@ -51,6 +52,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     entityMapping.put(ProcessDefinitionEntity.class, ENGINE_PROCESS_DEFINITION_MAP_NAME);
     entityMapping.put(PropertyEntity.class, ENGINE_PROPERTY_MAP_NAME);
     entityMapping.put(ExecutionEntity.class, ENGINE_EXECUTION_MAP_NAME);
+    entityMapping.put(JobEntity.class, ENGINE_JOB_MAP_NAME);
 
     entityMapping.put(CaseDefinitionEntity.class, ENGINE_CASE_DEFINITION_MAP_NAME);
   }
@@ -73,6 +75,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntityStatementHandler.put("selectVariableInstance", new SelectEntityByIdHandler(VariableInstanceEntity.class));
     selectEntityStatementHandler.put("selectProcessDefinitionById", new SelectEntityByIdHandler(ProcessDefinitionEntity.class));
     selectEntityStatementHandler.put("selectLatestProcessDefinitionByKey", new SelectLatestProcessDefinitionHandler());
+    selectEntityStatementHandler.put("selectProcessDefinitionByDeploymentAndKey", new SelectProcessDefinitionByDeploymentAndKeyHandler());
     selectEntityStatementHandler.put("selectJob", new SelectEntityByIdHandler(JobEntity.class));
 
     selectEntitiesStatementHandler = new HashMap<String, SelectEntitiesStatementHandler>();
@@ -87,6 +90,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectVariablesByCaseExecutionId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "caseExecutionId"));
     selectEntitiesStatementHandler.put("selectVariablesByTaskId", new SelectEntitiesByKeyHandler(VariableInstanceEntity.class, "taskId"));
     selectEntitiesStatementHandler.put("selectJobsByExecutionId", new SelectEntitiesByKeyHandler(JobEntity.class, "executionId"));
+    selectEntitiesStatementHandler.put("selectJobsByConfiguration", new SelectJobByConfigurationHandler());
   }
 
 

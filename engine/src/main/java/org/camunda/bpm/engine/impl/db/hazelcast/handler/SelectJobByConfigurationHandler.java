@@ -13,25 +13,25 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
-import com.hazelcast.query.SqlPredicate;
-import java.util.List;
-import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+import java.util.HashMap;
+import java.util.Map;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 
 /**
  * @author Sebastian Menski
  */
-public class SelectEntitiesByKeyHandler extends AbstractSelectEntitiesStatementHandler {
+public class SelectJobByConfigurationHandler extends SelectEntitiesByMapHandler {
 
-  protected String key;
-
-  public SelectEntitiesByKeyHandler(Class<? extends DbEntity> type, String key) {
-    super(type);
-    this.key = key;
+  public SelectJobByConfigurationHandler() {
+    super(JobEntity.class);
   }
 
-  public <T extends DbEntity> List<T> execute(HazelcastSession session, Object parameter) {
-    SqlPredicate predicate = SqlPredicateFactory.createEqualPredicate(key, parameter);
-    return selectByPredicate(session, predicate);
+  protected Map<String, String> getParameterMap(Object parameter) {
+    Map<String, String> parameters = super.getParameterMap(parameter);
+    Map<String, String> sqlParameters = new HashMap<String, String>();
+    sqlParameters.put("jobHandlerType", parameters.get("handlerType"));
+    sqlParameters.put("jobHandlerConfiguration", parameters.get("handlerConfiguration"));
+    return sqlParameters;
   }
+
 }
