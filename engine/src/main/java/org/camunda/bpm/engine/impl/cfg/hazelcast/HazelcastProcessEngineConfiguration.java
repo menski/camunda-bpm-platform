@@ -110,6 +110,10 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
         SerializationConfig serializationConfig = PortableSerialization.defaultSerializationConfig();
 
         hazelcastConfig.setSerializationConfig(serializationConfig);
+        hazelcastConfig.setManagementCenterConfig(new ManagementCenterConfig()
+          .setUrl("http://localhost:8080/mancenter")
+          .setEnabled(true)
+        );
       }
       hazelcastInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
     }

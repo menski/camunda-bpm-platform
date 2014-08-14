@@ -13,7 +13,9 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import com.hazelcast.query.SqlPredicate;
+
 import java.util.Map;
+import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
 
 /**
  * @author Daniel Meyer
@@ -30,6 +32,10 @@ public class SqlPredicateFactory {
   }
 
   public static SqlPredicate createEqualPredicate(String key, Object value) {
+    if (value instanceof ListQueryParameterObject) {
+      // TODO: implement list query parameter
+      value = ((ListQueryParameterObject) value).getParameter();
+    }
     return createSqlPredicate(String.format("%s = '%s'", key, value));
   }
 
@@ -41,14 +47,23 @@ public class SqlPredicateFactory {
     return createEqualPredicate("parentExecutionId", parentExecutionId);
   }
 
-  public static SqlPredicate createAndPredicate(Map<String, String> parameterMap) {
+  public static SqlPredicate createAndPredicate(Map<String, Object> parameterMap) {
     String predicate = null;
-    for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+    for (Map.Entry<String, Object> entry : parameterMap.entrySet()) {
+      Object value = entry.getValue();
       if (predicate == null) {
-        predicate = String.format("%s == '%s'", entry.getKey(), entry.getValue());
+        if (value instanceof String) {
+          predicate = String.format("%s == '%s'", entry.getKey(), value);
+        } else {
+          predicate = String.format("%s == %s", entry.getKey(), value);
+        }
       }
       else {
-        predicate = String.format("%s AND %s == '%s'", predicate, entry.getKey(), entry.getValue());
+        if (value instanceof String) {
+          predicate = String.format("%s AND %s == '%s'", predicate, entry.getKey(), value);
+        } else {
+          predicate = String.format("%s AND %s == %s", predicate, entry.getKey(), value);
+        }
       }
     }
     return createSqlPredicate(predicate);

@@ -14,8 +14,10 @@
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
 import com.hazelcast.core.HazelcastInstance;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
@@ -38,6 +40,9 @@ public class HazelcastSessionFactory implements SessionFactory {
   public final static String ENGINE_PROPERTY_MAP_NAME = "cam.engine.property";
   public final static String ENGINE_EXECUTION_MAP_NAME = "cam.engine.execution";
   public final static String ENGINE_JOB_MAP_NAME = "cam.engine.job";
+  public final static String ENGINE_JOB_DEFINITION_MAP_NAME = "cam.engine.job_definition";
+  public final static String ENGINE_EVENT_SUBSCRIPTION_MAP_NAME = "cam.engine.event_subscription";
+  public final static String ENGINE_IDENTITY_LINK_MAP_NAME = "cam.engine.identity_link";
 
   public final static String ENGINE_CASE_DEFINITION_MAP_NAME = "cam.engine.case_definition";
 
@@ -52,6 +57,9 @@ public class HazelcastSessionFactory implements SessionFactory {
     entityMapping.put(PropertyEntity.class, ENGINE_PROPERTY_MAP_NAME);
     entityMapping.put(ExecutionEntity.class, ENGINE_EXECUTION_MAP_NAME);
     entityMapping.put(JobEntity.class, ENGINE_JOB_MAP_NAME);
+    entityMapping.put(JobDefinitionEntity.class, ENGINE_JOB_DEFINITION_MAP_NAME);
+    entityMapping.put(EventSubscriptionEntity.class, ENGINE_EVENT_SUBSCRIPTION_MAP_NAME);
+    entityMapping.put(IdentityLinkEntity.class, ENGINE_IDENTITY_LINK_MAP_NAME);
 
     entityMapping.put(CaseDefinitionEntity.class, ENGINE_CASE_DEFINITION_MAP_NAME);
   }
@@ -66,6 +74,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     deleteStatementHandler.put("deleteCaseDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(CaseDefinitionEntity.class));
     deleteStatementHandler.put("deleteProcessDefinitionsByDeploymentId", new DeleteEntitiesByDeploymentIdHandler(ProcessDefinitionEntity.class));
     deleteStatementHandler.put("deleteDeployment", new DeleteEntityByIdHandler(DeploymentEntity.class));
+    deleteStatementHandler.put("deleteIdentityLinkByProcDef", new DeleteEntityByKeyHandler(IdentityLinkEntity.class, "processDefId"));
+    deleteStatementHandler.put("deleteJobDefinitionsByProcessDefinitionId", new DeleteEntityByKeyHandler(JobDefinitionEntity.class, "processDefinitionId"));
 
     selectEntityStatementHandler = new HashMap<String, SelectEntityStatementHandler>();
     selectEntityStatementHandler.put("selectExecution", new SelectEntityByIdHandler(ExecutionEntity.class));
@@ -80,6 +90,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler = new HashMap<String, SelectEntitiesStatementHandler>();
     selectEntitiesStatementHandler.put("selectExecutionsByParentExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PARENT_ID_FIELD));
     selectEntitiesStatementHandler.put("selectExecutionsByProcessInstanceId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_INSTANCE_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectExecutionsByQueryCriteria", new SelectExecutionsByQueryCriterieaStatementHandler());
     selectEntitiesStatementHandler.put("selectSubProcessInstanceBySuperCaseExecutionId", new SelectEntitiesByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.SUPER_EXECUTION_ID_FIELD));
     selectEntitiesStatementHandler.put("selectTasksByParentTaskId", new SelectEntitiesByKeyHandler(TaskEntity.class, "parentTaskId"));
     selectEntitiesStatementHandler.put("selectTasksByExecutionId", new SelectEntitiesByKeyHandler(TaskEntity.class, "executionId"));
@@ -92,6 +103,8 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectJobsByConfiguration", new SelectJobByConfigurationHandler());
     selectEntitiesStatementHandler.put("selectProcessDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, PortableProcessDefinitionEntity.DEPLOYMENT_ID_FIELD));
     selectEntitiesStatementHandler.put("selectCaseDefinitionByDeploymentId", new SelectEntitiesByKeyHandler(CaseDefinitionEntity.class, "deploymentId"));
+    selectEntitiesStatementHandler.put("selectProcessInstanceIdsByProcessDefinitionId", new SelectProcessInstanceIdsByKeyHandler(ExecutionEntity.class, PortableExecutionEntity.PROCESS_DEFINITION_ID_FIELD));
+    selectEntitiesStatementHandler.put("selectEventSubscriptionsByConfiguration", new SelectEventSubscriptionsByConfiguration());
   }
 
 

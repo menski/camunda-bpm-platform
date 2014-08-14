@@ -13,25 +13,15 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
-import com.hazelcast.query.SqlPredicate;
-import java.util.List;
-import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
+import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 
 /**
  * @author Sebastian Menski
  */
-public class SelectEntitiesByKeyHandler extends AbstractSelectEntitiesStatementHandler {
+public class SelectEventSubscriptionsByConfiguration extends SelectEntitiesByMapHandler {
 
-  protected String key;
-
-  public SelectEntitiesByKeyHandler(Class<? extends DbEntity> type, String key) {
-    super(type);
-    this.key = key;
+  public SelectEventSubscriptionsByConfiguration() {
+    super(EventSubscriptionEntity.class);
   }
 
-  public List<?> execute(HazelcastSession session, Object parameter) {
-    SqlPredicate predicate = SqlPredicateFactory.createEqualPredicate(key, parameter);
-    return selectByPredicate(session, predicate);
-  }
 }

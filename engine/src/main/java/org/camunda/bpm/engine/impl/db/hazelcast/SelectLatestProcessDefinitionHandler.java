@@ -26,7 +26,7 @@ public class SelectLatestProcessDefinitionHandler implements SelectEntityStateme
   @SuppressWarnings("unchecked")
   public ProcessDefinitionEntity execute(HazelcastSession session, Object parameter) {
     SelectEntitiesByKeyHandler entitiesHandler = new SelectEntitiesByKeyHandler(ProcessDefinitionEntity.class, "key");
-    List<ProcessDefinitionEntity> entities = entitiesHandler.execute(session, parameter);
+    List<ProcessDefinitionEntity> entities = (List<ProcessDefinitionEntity>) entitiesHandler.execute(session, parameter);
     ProcessDefinitionEntity latestVersion = null;
     for (ProcessDefinitionEntity entity : entities) {
       if (latestVersion == null || latestVersion.getVersion() < entity.getVersion()) {

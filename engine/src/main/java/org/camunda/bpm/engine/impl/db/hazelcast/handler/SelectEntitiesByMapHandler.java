@@ -29,21 +29,26 @@ public class SelectEntitiesByMapHandler extends AbstractSelectEntitiesStatementH
     super(type);
   }
 
-  public <T extends DbEntity> List<T> execute(HazelcastSession session, Object parameter) {
-    Map<String, String> parameterMap = getParameterMap(parameter);
+  public List<?> execute(HazelcastSession session, Object parameter) {
+    Map<String, Object> parameterMap = getParameterMap(parameter);
     SqlPredicate predicate = SqlPredicateFactory.createAndPredicate(parameterMap);
-    return selectByPredicate(session, predicate);
+    List<?> entities = selectByPredicate(session, predicate);
+    return filterEntities(entities);
   }
 
   @SuppressWarnings("unchecked")
-  protected Map<String, String> getParameterMap(Object parameter) {
+  protected Map<String, Object> getParameterMap(Object parameter) {
     if (parameter instanceof ListQueryParameterObject) {
       // TODO: add limit support
-      return (Map<String, String>) ((ListQueryParameterObject) parameter).getParameter();
+      return (Map<String, Object>) ((ListQueryParameterObject) parameter).getParameter();
     }
     else {
-      return (Map<String, String>) parameter;
+      return (Map<String, Object>) parameter;
     }
+  }
+
+  protected List<?> filterEntities(List<?> entities) {
+    return entities;
   }
 
 }

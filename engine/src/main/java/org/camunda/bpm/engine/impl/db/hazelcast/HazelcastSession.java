@@ -190,12 +190,9 @@ public class HazelcastSession extends AbstractPersistenceSession {
   }
 
   protected void dbSchemaDropEngine() {
-    getMap(ENGINE_DEPLOYMENT_MAP_NAME).clear();
-    getMap(ENGINE_BYTE_ARRAY_MAP_NAME).clear();
-    getMap(ENGINE_EXECUTION_MAP_NAME).clear();
-    getMap(ENGINE_PROCESS_DEFINITION_MAP_NAME).clear();
-    getMap(ENGINE_PROPERTY_MAP_NAME).clear();
-    getMap(ENGINE_JOB_MAP_NAME).clear();
+    for (String mapNames : entityMapping.values()) {
+      getMap(mapNames).clear();
+    }
   }
 
   protected void dbSchemaDropCmmn() {
@@ -224,7 +221,7 @@ public class HazelcastSession extends AbstractPersistenceSession {
     }
 
     SelectEntitiesStatementHandler statementHandler = HazelcastSessionFactory.getSelectEntitiesStatementHandler(statement);
-    return (List<?>) statementHandler.execute(this, parameter);
+    return (List) statementHandler.execute(this, parameter);
   }
 
   @SuppressWarnings("unchecked")

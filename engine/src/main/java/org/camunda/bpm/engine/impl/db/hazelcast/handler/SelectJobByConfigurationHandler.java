@@ -26,9 +26,9 @@ public class SelectJobByConfigurationHandler extends SelectEntitiesByMapHandler 
     super(JobEntity.class);
   }
 
-  protected Map<String, String> getParameterMap(Object parameter) {
-    Map<String, String> parameters = super.getParameterMap(parameter);
-    Map<String, String> sqlParameters = new HashMap<String, String>();
+  protected Map<String, Object> getParameterMap(Object parameter) {
+    Map<String, Object> parameters = super.getParameterMap(parameter);
+    Map<String, Object> sqlParameters = new HashMap<String, Object>();
     sqlParameters.put("jobHandlerType", parameters.get("handlerType"));
     sqlParameters.put("jobHandlerConfiguration", parameters.get("handlerConfiguration"));
     return sqlParameters;

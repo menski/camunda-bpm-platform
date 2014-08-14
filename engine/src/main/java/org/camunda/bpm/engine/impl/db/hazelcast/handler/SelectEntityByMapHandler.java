@@ -28,9 +28,10 @@ public class SelectEntityByMapHandler extends TypeAwareStatementHandler implemen
     super(type);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends DbEntity> T execute(HazelcastSession session, Object parameter) {
     Map<String, String> parameterMap = getParameterMap(parameter);
-    List<T> entities = new SelectEntitiesByMapHandler(type).execute(session, parameterMap);
+    List<T> entities = (List<T>) new SelectEntitiesByMapHandler(type).execute(session, parameterMap);
     if (entities.size() != 1) {
       throw new ProcessEngineException("Not only one result was found by statement " + this);
     }

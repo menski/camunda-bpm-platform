@@ -14,7 +14,6 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import java.util.List;
-import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 
 /**
@@ -22,6 +21,6 @@ import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
  */
 public interface SelectEntitiesStatementHandler {
 
-  <T extends DbEntity> List<T> execute(HazelcastSession session, Object parameter);
+  List<?> execute(HazelcastSession session, Object parameter);
 
 }

@@ -14,24 +14,24 @@
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
 import com.hazelcast.query.SqlPredicate;
-import java.util.List;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.hazelcast.HazelcastSession;
 
 /**
  * @author Sebastian Menski
  */
-public class SelectEntitiesByKeyHandler extends AbstractSelectEntitiesStatementHandler {
+public class DeleteEntityByKeyHandler extends AbstractDeleteStatementHandler {
 
   protected String key;
 
-  public SelectEntitiesByKeyHandler(Class<? extends DbEntity> type, String key) {
+  public DeleteEntityByKeyHandler(Class<? extends DbEntity> type, String key) {
     super(type);
     this.key = key;
   }
 
-  public List<?> execute(HazelcastSession session, Object parameter) {
+  public void execute(HazelcastSession session, Object parameter) {
     SqlPredicate predicate = SqlPredicateFactory.createEqualPredicate(key, parameter);
-    return selectByPredicate(session, predicate);
+    deleteByPredicate(session, predicate);
   }
+
 }
