@@ -13,56 +13,18 @@
 
 package org.camunda.bpm.engine.impl.db.hazelcast;
 
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
-
+import com.hazelcast.core.HazelcastInstance;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.db.DbEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntitiesByDeploymentIdHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByIdHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteEntityByKeyHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.DeleteStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesByKeyHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntitiesStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityByIdHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEntityStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEventSubscriptionsByConfiguration;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectEventSubscriptionsByQueryCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectExecutionsByQueryCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectJobByConfigurationHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectLatestProcessDefinitionHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionByDeploymentAndKeyHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessDefinitionsByCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceByQueryCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectProcessInstanceIdsByKeyHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectTasksByQueryCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.handler.SelectVariableInstancesByQueryCriteriaStatementHandler;
-import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableEventSubscriptionEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableExecutionEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableProcessDefinitionEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableTaskEntity;
-import org.camunda.bpm.engine.impl.db.hazelcast.serialization.PortableVariableInstanceEntity;
+import org.camunda.bpm.engine.impl.db.hazelcast.handler.*;
+import org.camunda.bpm.engine.impl.db.hazelcast.serialization.*;
 import org.camunda.bpm.engine.impl.interceptor.Session;
 import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
-import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.CompensateEventSubscriptionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.DeploymentEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.IdentityLinkEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.MessageEventSubscriptionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.PropertyEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.ResourceEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.*;
 
-import com.hazelcast.core.HazelcastInstance;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 /**
  * @author Sebastian Menski
@@ -155,6 +117,7 @@ public class HazelcastSessionFactory implements SessionFactory {
     selectEntitiesStatementHandler.put("selectEventSubscriptionByQueryCriteria", new SelectEventSubscriptionsByQueryCriteriaStatementHandler());
     selectEntitiesStatementHandler.put("selectIdentityLinksByTask", new SelectEntitiesByKeyHandler(IdentityLinkEntity.class, "taskId"));
     selectEntitiesStatementHandler.put("selectVariableInstanceByQueryCriteria", new SelectVariableInstancesByQueryCriteriaStatementHandler());
+    selectEntitiesStatementHandler.put("selectResourcesByDeploymentId", new SelectEntitiesByKeyHandler(ResourceEntity.class, PortableResourceEntity.DEPLOYMENT_ID_FIELD));
 
   }
 

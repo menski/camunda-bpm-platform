@@ -40,7 +40,7 @@ public class SelectEntitiesByMapHandler extends AbstractSelectEntitiesStatementH
     }
 
     List<?> entities = selectByPredicate(session, predicate);
-    return filterEntities(entities);
+    return filterEntities(parameter, entities);
   }
 
   @SuppressWarnings("unchecked")
@@ -54,7 +54,7 @@ public class SelectEntitiesByMapHandler extends AbstractSelectEntitiesStatementH
     }
   }
 
-  protected List<?> filterEntities(List<?> entities) {
+  protected List<?> filterEntities(Object parameter, List<?> entities) {
     return entities;
   }
 

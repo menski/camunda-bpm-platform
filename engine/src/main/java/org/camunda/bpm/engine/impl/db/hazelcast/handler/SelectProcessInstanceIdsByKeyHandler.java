@@ -47,7 +47,7 @@ public class SelectProcessInstanceIdsByKeyHandler extends SelectEntitiesByMapHan
     return mapParameters;
   }
 
-  protected List<?> filterEntities(List<?> entities) {
+  protected List<?> filterEntities(Object parameter, List<?> entities) {
     List<String> processInstanceIds = new ArrayList<String>(entities.size());
     for (Object resultEntity : entities) {
       ExecutionEntity executionEntity = (ExecutionEntity) resultEntity;

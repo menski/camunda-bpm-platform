@@ -41,6 +41,10 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
 
   protected HazelcastInstance hazelcastInstance;
 
+  public static List<String> members = new ArrayList<String>();
+
+  public static String manager = null;
+
   protected void init() {
     invokePreInit();
     initHazelcast();
@@ -94,8 +98,8 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
         MulticastConfig multicastConfig = new MulticastConfig().setEnabled(false);
 
         TcpIpConfig tcpIpConfig = new TcpIpConfig()
-          .addMember("localhost")
-          .setEnabled(true);
+          .setEnabled(true)
+          .setMembers(members);
 
         JoinConfig joinConfig = new JoinConfig()
           .setMulticastConfig(multicastConfig)
@@ -110,10 +114,13 @@ public class HazelcastProcessEngineConfiguration extends ProcessEngineConfigurat
         SerializationConfig serializationConfig = PortableSerialization.defaultSerializationConfig();
 
         hazelcastConfig.setSerializationConfig(serializationConfig);
-        hazelcastConfig.setManagementCenterConfig(new ManagementCenterConfig()
-          .setUrl("http://localhost:8080/mancenter")
-          .setEnabled(true)
-        );
+
+        if (manager != null) {
+          hazelcastConfig.setManagementCenterConfig(new ManagementCenterConfig()
+            .setUrl(manager)
+            .setEnabled(true)
+          );
+        }
 
       }
       hazelcastInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);

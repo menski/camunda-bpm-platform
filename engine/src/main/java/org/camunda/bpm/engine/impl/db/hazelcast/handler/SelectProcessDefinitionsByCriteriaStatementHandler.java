@@ -12,7 +12,9 @@
  */
 package org.camunda.bpm.engine.impl.db.hazelcast.handler;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.camunda.bpm.engine.impl.ProcessDefinitionQueryImpl;
@@ -42,4 +44,20 @@ public class SelectProcessDefinitionsByCriteriaStatementHandler extends SelectEn
     return parameterMap;
   }
 
+  protected List<?> filterEntities(Object parameter, List<?> entities) {
+    ProcessDefinitionQueryImpl query = (ProcessDefinitionQueryImpl) parameter;
+    if (query.isLatest()) {
+      ProcessDefinitionEntity latest = null;
+      for (Object entity : entities) {
+        ProcessDefinitionEntity processDefinitionEntity = (ProcessDefinitionEntity) entity;
+        if (latest == null || latest.getVersion() < processDefinitionEntity.getVersion()) {
+          latest = processDefinitionEntity;
+        }
+      }
+      return Arrays.asList(latest);
+    }
+    else {
+      return entities;
+    }
+  }
 }

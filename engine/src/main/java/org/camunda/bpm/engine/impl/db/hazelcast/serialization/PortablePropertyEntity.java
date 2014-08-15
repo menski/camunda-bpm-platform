@@ -48,9 +48,18 @@ public class PortablePropertyEntity extends AbstractPortableEntity<PropertyEntit
     return new PropertyEntity();
   }
 
+  public void readPortable(PortableReader reader) throws IOException {
+    wrappedEntity = createEntityInstance(reader);
+    readEntityFields(reader);
+  }
+
   protected void readEntityFields(PortableReader reader) throws IOException {
     wrappedEntity.setName(reader.readUTF(NAME_FIELD));
     wrappedEntity.setValue(reader.readUTF(VALUE_FIELD));
+  }
+
+  public void writePortable(PortableWriter writer) throws IOException {
+    writeEntityFields(writer);
   }
 
   protected void writeEntityFields(PortableWriter writer) throws IOException {
