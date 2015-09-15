@@ -32,7 +32,7 @@ public class InvoiceTestCase extends ProcessEngineTestCase {
 						.mimeType("application/pdf")
 						.create());
 
-		ProcessInstance pi = runtimeService.startProcessInstanceByKey("invoice", variables);
+		ProcessInstance pi = runtimeService.startProcessInstanceByKey("invoice-docker", variables);
 
 		Task task = taskService.createTaskQuery().processInstanceId(pi.getId()).singleResult();
 		assertEquals("approveInvoice", task.getTaskDefinitionKey());
@@ -76,7 +76,7 @@ public class InvoiceTestCase extends ProcessEngineTestCase {
 	            .create())
 	        .putValue("approverGroups", Arrays.asList("sales", "accounting"));
 
-	    ProcessInstance pi = runtimeService.createProcessInstanceByKey("invoice")
+	    ProcessInstance pi = runtimeService.createProcessInstanceByKey("invoice-docker")
         .setVariables(variables)
         .startBeforeActivity("approveInvoice")
         .execute();

@@ -7,7 +7,7 @@
   <collaboration id="collaboration_3">
     <participant id="Process_Engine_1" name="Invoice Receipt" processRef="invoice"/>
   </collaboration>
-  <process id="invoice" name="Invoice Receipt" isExecutable="true">
+  <process id="invoice-docker" name="Docker Demo Invoice Receipt" isExecutable="true">
     <laneSet id="laneSet_5">
       <lane id="Approver" name="Approver">
         <flowNodeRef>approveInvoice</flowNodeRef>
@@ -80,7 +80,7 @@ If data is missing, provide it.]]></documentation>
       <conditionExpression xsi:type="tFormalExpression">${clarified}</conditionExpression>
     </sequenceFlow>
     <dataStoreReference id="DataStoreReference_1" name="Financial Accounting System" dataStoreRef="FinancialAccountingSystem"/>
-    <businessRuleTask id="assignApprover" camunda:decisionRef="invoice-assign-approver" camunda:resultVariable="approverGroups" name="Assign Approver Group">
+    <businessRuleTask id="assignApprover" camunda:decisionRef="invoice-assign-approver-docker-demo" camunda:resultVariable="approverGroups" name="Assign Approver Group">
       <incoming>SequenceFlow_1</incoming>
       <outgoing>sequenceFlow_178</outgoing>
     </businessRuleTask>
